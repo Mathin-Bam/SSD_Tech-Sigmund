@@ -12,6 +12,7 @@ const allLinks: NavItem[] = [
   { to: '/onboarding',label: 'Onboarding',       icon: 'person_add', adminOnly: true },
   { to: '/risks',     label: 'Risks & Blockers', icon: 'warning' },
   { to: '/uploads',   label: 'Uploads',          icon: 'upload_file', adminOnly: true },
+  { to: '/settings',  label: 'Settings',         icon: 'settings', adminOnly: true },
 ]
 
 export function AppShell({ role }: { role: 'executive' | 'admin' }) {
@@ -49,7 +50,9 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
         </div>
 
         <nav className="sidebar-nav">
-          <span className="sidebar-nav-label">Navigation</span>
+          <span className="sidebar-nav-label">
+            {role === 'executive' ? 'Client Portal' : 'Navigation'}
+          </span>
           {links.map((link) => (
             <NavLink
               key={link.to}

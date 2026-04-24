@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Feature } from '../../domain/types'
 import { Section } from '../../shared/ui/components'
+import { useTeamMembers } from '../../hooks/useTeamMembers'
 
 export type FeatureUpdateFields = Pick<
   Feature,
@@ -11,6 +12,7 @@ export type FeatureUpdateFields = Pick<
   | 'srsRequirementId'
   | 'executiveSummary'
   | 'clientVisibility'
+  | 'assignedTo'
 >
 
 export function FeatureEditForm({
@@ -24,6 +26,7 @@ export function FeatureEditForm({
   onClose: () => void
   onSave: (featureId: string, patch: FeatureUpdateFields) => void
 }) {
+  const { teamMembers } = useTeamMembers()
   const [progress, setProgress] = useState(0)
   const [internalNotes, setInternalNotes] = useState('')
   const [githubPrUrl, setGithubPrUrl] = useState('')
@@ -31,6 +34,7 @@ export function FeatureEditForm({
   const [srsRequirementId, setSrsRequirementId] = useState('')
   const [executiveSummary, setExecutiveSummary] = useState('')
   const [clientVisibility, setClientVisibility] = useState(true)
+  const [assignedTo, setAssignedTo] = useState('')
 
   useEffect(() => {
     if (!feature) return
@@ -41,6 +45,7 @@ export function FeatureEditForm({
     setSrsRequirementId(feature.srsRequirementId ?? '')
     setExecutiveSummary(feature.executiveSummary ?? '')
     setClientVisibility(feature.clientVisibility)
+    setAssignedTo(feature.assignedTo ?? '')
   }, [feature])
 
   if (!open || !feature) return null
@@ -57,6 +62,7 @@ export function FeatureEditForm({
       srsRequirementId: srsRequirementId.trim() || undefined,
       executiveSummary: executiveSummary.trim() || undefined,
       clientVisibility,
+      assignedTo: assignedTo.trim() || undefined,
     })
     onClose()
   }
@@ -76,6 +82,17 @@ export function FeatureEditForm({
               Progress (0–100)
               <input id="edit-progress" type="range" min={0} max={100} value={progress} onChange={(e) => setProgress(Number(e.target.value))} />
               <span className="small">{progress}%</span>
+            </label>
+            <label htmlFor="edit-assignee">
+              Assigned Developer
+              <select id="edit-assignee" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+                <option value="">-- Unassigned --</option>
+                {teamMembers.map(member => (
+                  <option key={member.userId} value={member.name}>
+                    {member.name} ({member.role})
+                  </option>
+                ))}
+              </select>
             </label>
             <label htmlFor="edit-summary">
               Executive summary

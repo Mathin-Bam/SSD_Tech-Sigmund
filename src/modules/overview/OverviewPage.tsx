@@ -30,7 +30,14 @@ export function OverviewPage({
   const spotlight = features.filter((f) => f.mvpUrl || f.srsRequirementId || f.executiveSummary)
 
   return (
-    <div className="page">
+    <>
+      <style>{`
+        @keyframes live-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.35; transform: scale(0.75); }
+        }
+      `}</style>
+      <div className="page">
       {/* ── Page Header ── */}
       <div className="page-header">
         <div className="page-header-text">
@@ -38,6 +45,36 @@ export function OverviewPage({
           <p>Real-time pulse on portfolio performance and major deliverables.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1 }}>
+          {role === 'executive' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                background: 'var(--accent-green-muted)',
+                border: '1px solid rgba(34,197,94,0.3)',
+                borderRadius: 20,
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                letterSpacing: '0.07em',
+                color: 'var(--accent-green)',
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--accent-green)',
+                  display: 'inline-block',
+                  animation: 'live-pulse 2s ease infinite',
+                  flexShrink: 0,
+                }}
+              />
+              LIVE
+            </div>
+          )}
           <ProgressRing pct={summary.overallCompletionPct} size={80} />
           <div>
             <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Overall</p>
@@ -84,7 +121,24 @@ export function OverviewPage({
                     }
                   />
                 </div>
-                {f.executiveSummary ? <p className="exec-summary">{f.executiveSummary}</p> : null}
+                {f.executiveSummary && role === 'executive' ? (
+                  <p
+                    style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.55,
+                      marginTop: '0.4rem',
+                      padding: '0.5rem 0.75rem',
+                      background: 'rgba(255,255,255,0.03)',
+                      borderLeft: '2px solid var(--brand-primary)',
+                      borderRadius: '0 6px 6px 0',
+                    }}
+                  >
+                    {f.executiveSummary}
+                  </p>
+                ) : f.executiveSummary ? (
+                  <p className="exec-summary">{f.executiveSummary}</p>
+                ) : null}
                 <div className="row-gap">
                   {f.mvpUrl ? <ExternalLinkButton href={f.mvpUrl}>MVP / Demo</ExternalLinkButton> : null}
                   {f.srsRequirementId ? (
@@ -155,5 +209,6 @@ export function OverviewPage({
         </div>
       </Section>
     </div>
+    </>
   )
 }

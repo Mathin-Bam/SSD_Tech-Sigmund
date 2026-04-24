@@ -1,0 +1,37 @@
+name: Dashboard Webhook
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Webhook to Supabase
+        uses: actions/github-script@v6
+        env:
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          WEBHOOK_URL: "https://ltxrsvslhxycaxcqerty.supabase.co/functions/v1/github-webhook"
+        with:
+          script: |
+            const crypto = require('crypto');
+            const commits = context.payload.commits;
+            if (!commits || commits.length === 0) return;
+            
+            // Generate HMAC signature
+            const payload = JSON.stringify({ commits });
+            const hmac = crypto.createHmac('sha256', process.env.WEBHOOK_SECRET);
+            hmac.update(payload);
+            const signature = hmac.digest('hex');
+            
+            // Send fetch request
+            await fetch(process.env.WEBHOOK_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-hub-signature-256': signature
+              },
+              body: payload
+            });
