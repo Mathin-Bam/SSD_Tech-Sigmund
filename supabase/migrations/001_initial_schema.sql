@@ -23,7 +23,7 @@ begin
   values (
     new.id, 
     coalesce(new.raw_user_meta_data->>'full_name', new.email), 
-    coalesce(new.raw_user_meta_data->>'role', 'executive')
+    'executive'
   )
   on conflict (id) do nothing;
   return new;
@@ -50,10 +50,10 @@ create table if not exists public.features (
   stage text check (stage in ('Design','Development','Testing','Deployment','Done')) default 'Design',
   status text default 'Not Started',
   progress integer check (progress >= 0 and progress <= 100) default 0,
-  start_date text,
-  planned_deadline text,
-  revised_deadline text,
-  estimated_completion_date text,
+  start_date date,
+  planned_deadline date,
+  revised_deadline date,
+  estimated_completion_date date,
   on_track_status text default 'On Track',
   current_task text default '',
   next_task text default '',
@@ -63,7 +63,7 @@ create table if not exists public.features (
   design_status text default 'Not Started',
   development_status text default 'Not Started',
   last_updated_by text,
-  last_updated_at text,
+  last_updated_at timestamptz,
   client_visibility boolean default true,
   executive_summary text,
   mvp_url text,
@@ -132,9 +132,9 @@ drop policy if exists "Admin reads logs" on public.update_logs;
 create policy "Admin reads logs" on public.update_logs for select
   using ((select role from public.profiles where id = auth.uid()) = 'admin');
 
-drop policy if exists "Service inserts logs" on public.update_logs;
-create policy "Service inserts logs" on public.update_logs for insert
-  with check (true);
+create policy "Authenticated users insert own logs" on public.update_logs for insert
+  to authenticated
+  with check (changed_by = auth.uid());
 
 -- 7. Seed Data
 -- Features

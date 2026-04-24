@@ -77,33 +77,33 @@ export function FeatureEditForm({
       >
         <Section title={`Edit: ${editing.featureName}`} action={<button type="button" className="btn-ghost" onClick={onClose}>Close</button>}>
           <form className="edit-form" onSubmit={handleSubmit}>
-            <label>
+            <label htmlFor="edit-progress">
               Progress (0–100)
-              <input type="range" min={0} max={100} value={progress} onChange={(e) => setProgress(Number(e.target.value))} />
+              <input id="edit-progress" type="range" min={0} max={100} value={progress} onChange={(e) => setProgress(Number(e.target.value))} />
               <span className="small">{progress}%</span>
             </label>
-            <label>
+            <label htmlFor="edit-summary">
               Executive summary
-              <textarea value={executiveSummary} onChange={(e) => setExecutiveSummary(e.target.value)} rows={3} placeholder="Client-facing status" />
+              <textarea id="edit-summary" value={executiveSummary} onChange={(e) => setExecutiveSummary(e.target.value)} rows={3} placeholder="Client-facing status" />
             </label>
-            <label>
+            <label htmlFor="edit-mvp">
               MVP / demo URL
-              <input value={mvpUrl} onChange={(e) => setMvpUrl(e.target.value)} placeholder="https://..." />
+              <input id="edit-mvp" value={mvpUrl} onChange={(e) => setMvpUrl(e.target.value)} placeholder="https://..." />
             </label>
-            <label>
+            <label htmlFor="edit-srs">
               SRS requirement ID
-              <input value={srsRequirementId} onChange={(e) => setSrsRequirementId(e.target.value)} placeholder="SRS-42" />
+              <input id="edit-srs" value={srsRequirementId} onChange={(e) => setSrsRequirementId(e.target.value)} placeholder="SRS-42" />
             </label>
-            <label>
+            <label htmlFor="edit-github">
               GitHub PR URL (internal)
-              <input value={githubPrUrl} onChange={(e) => setGithubPrUrl(e.target.value)} placeholder="https://github.com/..." />
+              <input id="edit-github" value={githubPrUrl} onChange={(e) => setGithubPrUrl(e.target.value)} placeholder="https://github.com/..." />
             </label>
-            <label>
+            <label htmlFor="edit-notes">
               Internal notes
-              <textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={3} placeholder="Developer / blocker notes" />
+              <textarea id="edit-notes" value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={3} placeholder="Developer / blocker notes" />
             </label>
-            <label className="checkbox-row">
-              <input type="checkbox" checked={clientVisibility} onChange={(e) => setClientVisibility(e.target.checked)} />
+            <label className="checkbox-row" htmlFor="edit-visibility">
+              <input id="edit-visibility" type="checkbox" checked={clientVisibility} onChange={(e) => setClientVisibility(e.target.checked)} />
               Visible in Executive view
             </label>
             <div className="modal-actions">

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { deadlineAlerts } from '../../domain/rules'
+import { daysUntilDeadline, deadlineAlerts } from '../../domain/rules'
+import { getInitials, formatDate } from '../../shared/utils/formatters'
 import type { Feature, Phase } from '../../domain/types'
 import { Badge } from '../../shared/ui/components'
 
@@ -23,18 +24,6 @@ const STAGE_COLOR: Record<string, string> = {
 
 const STAGE_ORDER = ['Design', 'Development', 'Testing', 'Deployment', 'Done']
 
-function daysLeft(feature: Feature): number {
-  const deadline = new Date(feature.revisedDeadline ?? feature.plannedDeadline)
-  return Math.floor((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function getInitials(name: string) {
-  return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-}
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
@@ -135,7 +124,7 @@ function MilestoneCard({ feature, expanded, onToggle }: {
   expanded: boolean
   onToggle: () => void
 }) {
-  const dl = daysLeft(feature)
+  const dl = daysUntilDeadline(feature)
   const alerts = deadlineAlerts(feature)
   const statusColor = STATUS_COLOR[feature.onTrackStatus] ?? '#64748b'
 
@@ -144,6 +133,16 @@ function MilestoneCard({ feature, expanded, onToggle }: {
       className="tl-milestone-card"
       style={{ borderLeftColor: statusColor }}
       onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onToggle()
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-expanded={expanded}
+      aria-label={`Milestone: ${feature.featureName}, ${feature.onTrackStatus}`}
     >
       {/* header row */}
       <div className="tl-mc-header">
@@ -253,11 +252,11 @@ function MilestoneCard({ feature, expanded, onToggle }: {
 /** Current Focus sprint hero card */
 function CurrentFocusCard({ features }: { features: Feature[] }) {
   const inProgress = features.filter((f) => f.status === 'In Progress' || f.status === 'Testing')
-  const mostUrgent = inProgress.sort((a, b) => daysLeft(a) - daysLeft(b))[0]
+  const mostUrgent = inProgress.sort((a, b) => daysUntilDeadline(a) - daysUntilDeadline(b))[0]
   if (!mostUrgent) return null
 
   const phase = mostUrgent.phaseName
-  const dl = daysLeft(mostUrgent)
+  const dl = daysUntilDeadline(mostUrgent)
 
   return (
     <div className="tl-focus-card">

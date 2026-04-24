@@ -1054,7 +1054,7 @@ progress {
 
 .tl-phase-dates {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-top: 0.15rem;
 }
 
@@ -1142,7 +1142,7 @@ progress {
 
 .tl-mc-meta {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   flex-wrap: wrap;

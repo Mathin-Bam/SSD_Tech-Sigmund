@@ -62,7 +62,7 @@ function Dashboard() {
             path="/uploads"
             element={
               role === 'admin' ? (
-                <UploadsPage onMergeFeatures={() => {}} />
+                <UploadsPage onMergeFeatures={bulkUpsertFeatures} />
               ) : (
                 <Navigate to="/" replace />
               )

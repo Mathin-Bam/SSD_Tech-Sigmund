@@ -1,33 +1,11 @@
 import { useMemo, useState } from 'react'
-import { deadlineAlerts } from '../../domain/rules'
+import { daysUntilDeadline, deadlineAlerts, getSeverityLevel } from '../../domain/rules'
+import { getInitials, formatDate, avatarGradient } from '../../shared/utils/formatters'
 import type { Feature } from '../../domain/types'
 import { Badge } from '../../shared/ui/components'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const DAY_MS = 1000 * 60 * 60 * 24
-
-function daysLeft(feature: Feature): number {
-  const deadline = new Date(feature.revisedDeadline ?? feature.plannedDeadline)
-  return Math.floor((deadline.getTime() - Date.now()) / DAY_MS)
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function getInitials(name: string) {
-  return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-}
-
-type SeverityLevel = 'critical' | 'high' | 'medium' | 'low'
-
-function getSeverity(f: Feature): SeverityLevel {
-  if (f.onTrackStatus === 'Delayed' || f.status === 'Blocked') return 'critical'
-  if (f.onTrackStatus === 'At Risk') return 'high'
-  if (f.onTrackStatus === 'Slight Risk') return 'medium'
-  return 'low'
-}
 
 const SEVERITY_META: Record<SeverityLevel, { label: string; color: string; borderColor: string; bgColor: string }> = {
   critical: { label: 'Critical', color: '#e31837', borderColor: '#e31837',  bgColor: 'rgba(227,24,55,0.08)' },
@@ -112,10 +90,10 @@ function ActionRequiredBox({ text }: { text: string }) {
 // ─── Risk Card ────────────────────────────────────────────────────────────────
 
 function RiskCard({ feature }: { feature: Feature }) {
-  const severity = getSeverity(feature)
+  const severity = getSeverityLevel(feature)
   const meta = SEVERITY_META[severity]
   const alerts = deadlineAlerts(feature)
-  const dl = daysLeft(feature)
+  const dl = daysUntilDeadline(feature)
 
   const hasBlocker = !!feature.blockerNote
   const hasWaitingOn = feature.dependencies.length > 0 || hasBlocker
@@ -257,7 +235,7 @@ function RiskDistribution({ features }: { features: Feature[] }) {
       label: 'Deadline Pressure',
       icon: 'schedule',
       color: '#a78bfa',
-      count: features.filter((f) => daysLeft(f) <= 7 && f.onTrackStatus !== 'Completed').length,
+      count: features.filter((f) => daysUntilDeadline(f) <= 7 && f.onTrackStatus !== 'Completed').length,
     },
   ]
 
@@ -358,8 +336,8 @@ export function RisksPage({ features }: { features: Feature[] }) {
     [features],
   )
 
-  const critical  = useMemo(() => features.filter((f) => getSeverity(f) === 'critical'), [features])
-  const atRisk    = useMemo(() => features.filter((f) => getSeverity(f) === 'high' || getSeverity(f) === 'medium'), [features])
+  const critical  = useMemo(() => features.filter((f) => getSeverityLevel(f) === 'critical'), [features])
+  const atRisk    = useMemo(() => features.filter((f) => getSeverityLevel(f) === 'high' || getSeverityLevel(f) === 'medium'), [features])
   const dlAlerts  = useMemo(() => features.filter((f) => deadlineAlerts(f).some((a) => a.type === 'due_soon' || a.type === 'overdue')), [features])
 
   // resolved this "week" — for demo, features with progress >= 90 or status completed

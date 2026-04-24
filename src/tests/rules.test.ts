@@ -48,4 +48,17 @@ describe('rule engine', () => {
     expect(alerts.map((a) => a.type)).toContain('due_soon')
     expect(alerts.map((a) => a.type)).toContain('stale')
   })
+
+  it('does not mark a feature delayed on its deadline day', () => {
+    const status = onTrackClassifier(baseFeature, new Date('2026-04-25'))
+    expect(status).not.toBe('Delayed')
+  })
+
+  it('marks stale exactly at 3 days since last update', () => {
+    const alerts = deadlineAlerts(
+      { ...baseFeature, lastUpdatedAt: '2026-04-21' },
+      new Date('2026-04-24'),
+    )
+    expect(alerts.map((a) => a.type)).toContain('stale')
+  })
 })

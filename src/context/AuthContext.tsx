@@ -1,15 +1,8 @@
-import { createContext, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-
-interface AuthContextValue {
-  user: User | null
-  role: 'admin' | 'executive' | null
-  loading: boolean
-  signOut: () => Promise<void>
-}
-
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+import { AuthContext } from './AuthContextInstance'
+import type { AuthContextValue } from './AuthContextInstance'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -73,7 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      throw error
+    }
   }
 
   const value: AuthContextValue = {

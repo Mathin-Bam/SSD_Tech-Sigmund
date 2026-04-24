@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useTeamMembers } from '../../hooks/useTeamMembers'
 import { Badge, Section } from '../../shared/ui/components'
 
@@ -18,7 +18,7 @@ export function OnboardingPage() {
     'Project Manager',
   ]
 
-  async function handleInvite(e: React.FormEvent) {
+  async function handleInvite(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setInviting(true)
     setMsg(null)
@@ -35,9 +35,13 @@ export function OnboardingPage() {
     }
   }
 
-  function handleDeactivate(id: string, name: string) {
+  async function handleDeactivate(id: string, name: string) {
     if (window.confirm(`Remove ${name} from the project?`)) {
-      deactivateMember(id)
+      try {
+        await deactivateMember(id)
+      } catch (err: any) {
+        setMsg({ text: err.message || 'Failed to remove member', type: 'error' })
+      }
     }
   }
 
@@ -95,20 +99,24 @@ export function OnboardingPage() {
             </label>
 
             {msg && (
-              <div style={{ 
-                padding: '0.75rem', 
-                borderRadius: 8, 
-                fontSize: '0.85rem',
-                background: msg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                color: msg.type === 'success' ? '#10b981' : '#ef4444',
-                border: `1px solid ${msg.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`
-              }}>
+              <div 
+                role="alert"
+                aria-live="polite"
+                style={{ 
+                  padding: '0.75rem', 
+                  borderRadius: 8, 
+                  fontSize: '0.85rem',
+                  background: msg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                  color: msg.type === 'success' ? '#10b981' : '#ef4444',
+                  border: `1px solid ${msg.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`
+                }}
+              >
                 {msg.text}
               </div>
             )}
 
             <div className="modal-actions" style={{ marginTop: '1rem' }}>
-              <button type="submit" disabled={inviting} style={{ width: '100%' }}>
+              <button type="submit" disabled={inviting} style={{ width: '100%' }} aria-busy={inviting}>
                 {inviting ? 'Sending...' : 'Send Invite'}
               </button>
             </div>

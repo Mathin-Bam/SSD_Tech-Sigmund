@@ -9,16 +9,19 @@ export type Database = {
           id: string
           role: 'admin' | 'executive'
           full_name: string | null
+          created_at: string
         }
         Insert: {
           id: string
           role: 'admin' | 'executive'
           full_name?: string | null
+          created_at?: string
         }
         Update: {
           id?: string
           role?: 'admin' | 'executive'
           full_name?: string | null
+          created_at?: string
         }
       }
       features: {
@@ -56,6 +59,7 @@ export type Database = {
           srs_requirement_id: string | null
           github_pr_url: string | null
           internal_notes: string | null
+          created_at: string
         }
         Insert: {
           feature_id: string
@@ -91,6 +95,7 @@ export type Database = {
           srs_requirement_id?: string | null
           github_pr_url?: string | null
           internal_notes?: string | null
+          created_at?: string
         }
         Update: {
           feature_id?: string
@@ -126,6 +131,7 @@ export type Database = {
           srs_requirement_id?: string | null
           github_pr_url?: string | null
           internal_notes?: string | null
+          created_at?: string
         }
       }
       update_logs: {

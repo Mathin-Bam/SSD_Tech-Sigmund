@@ -25,7 +25,15 @@ export function computeSummaryMetrics(features: Feature[], phases: Phase[]): Sum
 
   return {
     totalPhases: phases.length,
-    activePhase: phases[0]?.phaseName ?? 'N/A',
+    activePhase: (function() {
+      const today = new Date()
+      const active = phases.find((phase) => {
+        const start = new Date(phase.startDate)
+        const end = new Date(phase.endDate)
+        return start <= today && today <= end
+      }) ?? phases.find((phase) => phase.status !== 'Completed') ?? phases[0]
+      return active?.phaseName ?? 'N/A'
+    })(),
     totalFeatures: features.length,
     completedFeatures: completed,
     inProgressFeatures: inProgress,
@@ -42,9 +50,16 @@ export function phaseHealth(phases: Phase[], features: Feature[]) {
   return phases.map((phase) => {
     const phaseFeatures = features.filter((f) => f.phaseId === phase.phaseId)
     const delayed = phaseFeatures.filter((f) => f.onTrackStatus === 'Delayed').length
-    const inProgress = phaseFeatures.filter((f) => f.status === 'In Progress' || f.status === 'Testing').length
+    const inProgress = phaseFeatures.filter((f) => ['In Progress', 'In Review', 'Testing'].includes(f.status)).length
     const completed = phaseFeatures.filter((f) => f.status === 'Completed').length
-    const health = delayed > 0 ? 'Delayed' : inProgress > 0 ? 'On Track' : 'Completed'
+    const health =
+      delayed > 0
+        ? 'Delayed'
+        : inProgress > 0
+          ? 'On Track'
+          : phaseFeatures.length > 0 && completed === phaseFeatures.length
+            ? 'Completed'
+            : 'On Track'
 
     return { phase, total: phaseFeatures.length, delayed, inProgress, completed, health }
   })

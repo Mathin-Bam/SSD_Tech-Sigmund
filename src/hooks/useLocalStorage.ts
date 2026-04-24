@@ -1,4 +1,4 @@
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 
 /**
  * JSON-backed localStorage state. `read` maps raw string (or null) to initial value.
@@ -20,6 +20,14 @@ export function useLocalStorage<T>(key: string, read: (raw: string | null) => T)
     },
     [key],
   )
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === key) setState(read(e.newValue))
+    }
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [key, read])
 
   return [state, setValue]
 }

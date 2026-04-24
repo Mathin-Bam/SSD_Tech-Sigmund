@@ -17,6 +17,15 @@ interface UseUpdateLogsReturn {
   addLog: (featureId: string, note: string, changeType?: 'manual' | 'github_push') => Promise<void>
 }
 
+interface UpdateLogRow {
+  id: string
+  feature_id: string
+  change_type: 'manual' | 'github_push'
+  note: string | null
+  created_at: string
+  profiles: { full_name: string } | null
+}
+
 export function useUpdateLogs(featureId: string | null): UseUpdateLogsReturn {
   const [logs, setLogs] = useState<UpdateLog[]>([])
   const [loading, setLoading] = useState(false)
@@ -44,11 +53,11 @@ export function useUpdateLogs(featureId: string | null): UseUpdateLogsReturn {
 
       if (error) throw error
 
-      const rows = (data as any[]) || []
+      const rows = (data as UpdateLogRow[]) || []
       const mapped: UpdateLog[] = rows.map(row => ({
         id: row.id,
         featureId: row.feature_id,
-        changedBy: (row.profiles as any)?.full_name || 'System',
+        changedBy: row.profiles?.full_name || 'System',
         changeType: row.change_type,
         note: row.note,
         createdAt: row.created_at
@@ -101,6 +110,7 @@ export function useUpdateLogs(featureId: string | null): UseUpdateLogsReturn {
       // Realtime will handle the state update
     } catch (err: any) {
       console.error('Failed to add log:', err.message)
+      throw err
     }
   }
 

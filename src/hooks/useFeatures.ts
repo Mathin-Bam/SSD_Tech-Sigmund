@@ -10,6 +10,7 @@ interface UseFeaturesReturn {
   loading: boolean
   error: string | null
   updateFeature: (featureId: string, patch: FeatureUpdateFields) => Promise<void>
+  bulkUpsertFeatures: (newFeatures: Feature[]) => Promise<void>
   refetch: () => Promise<void>
 }
 
@@ -136,11 +137,77 @@ export function useFeatures(): UseFeaturesReturn {
         .eq('feature_id', featureId)
 
       if (updateError) throw updateError
+
+      // 3. Log the change
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await (supabase.from('update_logs') as any).insert({
+          feature_id: featureId,
+          changed_by: user.id,
+          change_type: 'manual',
+          note: `Updated: ${Object.keys(patch).join(', ')}`
+        })
+      }
     } catch (err: any) {
       console.error('Update failed:', err.message)
       setError(`Update failed: ${err.message}`)
-      // 3. Revert on failure
+      // 4. Revert on failure
       setFeatures(originalFeatures)
+    }
+  }
+
+  const bulkUpsertFeatures = async (newFeatures: Feature[]) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const rows = newFeatures.map(f => ({
+        feature_id: f.featureId,
+        feature_name: f.featureName,
+        description: f.description,
+        phase_id: f.phaseId,
+        phase_name: f.phaseName,
+        module_name: f.moduleName,
+        priority: f.priority,
+        assigned_to: f.assignedTo,
+        owner: f.owner,
+        team: f.team,
+        stage: f.stage,
+        status: f.status,
+        progress: f.progress,
+        start_date: f.startDate,
+        planned_deadline: f.plannedDeadline,
+        revised_deadline: f.revisedDeadline,
+        estimated_completion_date: f.estimatedCompletionDate,
+        on_track_status: f.onTrackStatus,
+        current_task: f.currentTask,
+        next_task: f.nextTask,
+        dependencies: f.dependencies,
+        blocker_note: f.blockerNote,
+        qa_status: f.qaStatus,
+        design_status: f.designStatus,
+        development_status: f.developmentStatus,
+        last_updated_by: f.lastUpdatedBy,
+        last_updated_at: new Date().toISOString(),
+        client_visibility: f.clientVisibility,
+        executive_summary: f.executiveSummary,
+        mvp_url: f.mvpUrl,
+        srs_requirement_id: f.srsRequirementId,
+        github_pr_url: f.githubPrUrl,
+        internal_notes: f.internalNotes,
+      }))
+
+      const { error: upsertError } = await (supabase
+        .from('features') as any)
+        .upsert(rows, { onConflict: 'feature_id' })
+
+      if (upsertError) throw upsertError
+      await fetchFeatures()
+    } catch (err: any) {
+      console.error('Bulk upsert failed:', err.message)
+      setError(`Bulk upsert failed: ${err.message}`)
+      throw err
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -149,6 +216,7 @@ export function useFeatures(): UseFeaturesReturn {
     loading,
     error,
     updateFeature,
+    bulkUpsertFeatures,
     refetch: fetchFeatures
   }
 }

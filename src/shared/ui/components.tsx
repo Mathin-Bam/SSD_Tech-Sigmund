@@ -28,9 +28,10 @@ export function MetricCard({
 }
 
 export function ProgressRing({ pct, size = 80 }: { pct: number; size?: number }) {
+  const clamped = Math.max(0, Math.min(100, pct))
   const r = (size - 10) / 2
   const circ = 2 * Math.PI * r
-  const offset = circ - (pct / 100) * circ
+  const offset = circ - (clamped / 100) * circ
   return (
     <div className="completion-ring-wrap">
       <div className="completion-ring" style={{ width: size, height: size }}>
@@ -49,7 +50,7 @@ export function ProgressRing({ pct, size = 80 }: { pct: number; size?: number })
             style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)' }}
           />
         </svg>
-        <div className="completion-ring-label">{pct}%</div>
+        <div className="completion-ring-label">{clamped}%</div>
       </div>
     </div>
   )

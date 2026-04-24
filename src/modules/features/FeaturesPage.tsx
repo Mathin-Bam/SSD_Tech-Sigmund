@@ -62,11 +62,12 @@ export function FeaturesPage({
       </div>
 
       <Section title="Feature Registry">
-        <div className="toolbar">
+        <nav className="toolbar" aria-label="Feature filters">
           <div style={{ position: 'relative' }}>
             <span
               className="material-symbols-rounded"
               style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--text-muted)', pointerEvents: 'none' }}
+              aria-hidden="true"
             >
               search
             </span>
@@ -74,24 +75,25 @@ export function FeaturesPage({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search features…"
+              aria-label="Search features"
               style={{ paddingLeft: '2.1rem' }}
             />
           </div>
-          <select value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)}>
-            <option>All</option>
+          <select value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)} aria-label="Filter by phase">
+            <option>All Phases</option>
             {phases.map((phase) => <option key={phase}>{phase}</option>)}
           </select>
-          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
-            <option>All</option>
+          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} aria-label="Filter by stage">
+            <option value="All">All Stages</option>
             <option>Design</option><option>Development</option><option>Testing</option>
             <option>Deployment</option><option>Done</option>
           </select>
-          <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)}>
-            <option>All</option>
+          <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} aria-label="Filter by on-track status">
+            <option value="All">All Statuses</option>
             <option>On Track</option><option>Slight Risk</option><option>At Risk</option>
             <option>Delayed</option><option>Completed</option>
           </select>
-        </div>
+        </nav>
 
         <div className="table-wrap">
           <table>
@@ -114,6 +116,15 @@ export function FeaturesPage({
                 <tr
                   key={f.featureId}
                   onClick={() => handleRowClick(f)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleRowClick(f)
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View details for ${f.featureName}`}
                   style={selectedId === f.featureId ? { background: 'rgba(227,24,55,0.06)' } : undefined}
                 >
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontFamily: 'monospace' }}>{f.featureId}</td>

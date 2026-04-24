@@ -11,7 +11,23 @@ const optionalHeaders = [
 ]
 
 function parseCsvLine(line: string): string[] {
-  return line.split(',').map((x) => x.trim())
+  const result: string[] = []
+  let cell = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(cell.trim())
+      cell = ''
+    } else {
+      cell += char
+    }
+  }
+  result.push(cell.trim())
+  return result
 }
 
 export function validateHeaders(headers: string[]): string[] {
@@ -23,10 +39,11 @@ function cell(row: Record<string, string>, key: string): string | undefined {
 }
 
 export function parseUploadCsv(content: string): { records: Feature[]; errors: string[] } {
-  const lines = content.trim().split(/\r?\n/)
+  const rawLines = content.split(/\r?\n/)
+  const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0)
   if (lines.length < 2) return { records: [], errors: ['CSV needs headers and at least one row'] }
 
-  const headers = parseCsvLine(lines[0])
+  const headers = parseCsvLine(lines[0]).map(h => h.trim())
   const missing = validateHeaders(headers)
   if (missing.length > 0) return { records: [], errors: [`Missing required columns: ${missing.join(', ')}`] }
 

@@ -366,6 +366,8 @@ export function LoginPage({ projectId, onBack }: LoginPageProps) {
       setError(signInError.message)
       setErrorKey((k) => k + 1)
       setLoading(false)
+    } else {
+      setLoading(false)
     }
     // On success: AuthContext.onAuthStateChange fires → App.tsx redirects automatically
   }
