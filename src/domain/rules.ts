@@ -53,7 +53,7 @@ export function deadlineAlerts(feature: Feature, now = new Date()): DeadlineAler
 export function daysUntilDeadline(feature: Feature): number {
   const deadline = startOfUtcDay(new Date(feature.revisedDeadline ?? feature.plannedDeadline))
   const today = startOfUtcDay(new Date())
-  return Math.floor((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.floor((deadline - today) / (1000 * 60 * 60 * 24))
 }
 
 export type SeverityLevel = 'critical' | 'high' | 'medium' | 'low'

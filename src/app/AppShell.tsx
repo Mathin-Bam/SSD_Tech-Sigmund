@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -15,6 +16,7 @@ const allLinks: NavItem[] = [
 
 export function AppShell({ role }: { role: 'executive' | 'admin' }) {
   const { user, signOut } = useAuth()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const links = allLinks.filter((link) => !link.adminOnly || role === 'admin')
 
   const displayEmail = user?.email ?? ''
@@ -22,8 +24,22 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
 
   return (
     <div className="shell">
+      {/* ── Mobile menu toggle ── */}
+      <button
+        type="button"
+        className="mobile-menu-toggle"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        aria-expanded={isSidebarOpen}
+        aria-controls="main-sidebar"
+        aria-label="Toggle navigation menu"
+      >
+        <span className="material-symbols-rounded">
+          {isSidebarOpen ? 'close' : 'menu'}
+        </span>
+      </button>
+
       {/* ── Sidebar ── */}
-      <aside className="sidebar">
+      <aside id="main-sidebar" className={`sidebar${isSidebarOpen ? ' sidebar--open' : ''}`}>
         <div className="sidebar-brand">
           <img className="sidebar-brand-logo" src="/ssd-tech-logo.png" alt="SSD-Tech" width={36} height={36} />
           <div className="sidebar-brand-text">
@@ -40,6 +56,7 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
               to={link.to}
               end={link.to === '/'}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+              onClick={() => setIsSidebarOpen(false)}
             >
               <span className="material-symbols-rounded">{link.icon}</span>
               {link.label}

@@ -33,7 +33,7 @@ function Dashboard() {
   const role: 'admin' | 'executive' = authRole ?? 'executive'
 
   // Live Supabase Hooks
-  const { features, updateFeature } = useFeatures()
+  const { features, updateFeature, bulkUpsertFeatures } = useFeatures()
   const { teamMembers } = useTeamMembers()
 
   return (

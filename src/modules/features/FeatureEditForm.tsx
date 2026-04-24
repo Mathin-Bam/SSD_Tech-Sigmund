@@ -18,13 +18,11 @@ export function FeatureEditForm({
   open,
   onClose,
   onSave,
-  onLogUpdate,
 }: {
   feature: Feature | null
   open: boolean
   onClose: () => void
   onSave: (featureId: string, patch: FeatureUpdateFields) => void
-  onLogUpdate?: (featureId: string, note: string) => void
 }) {
   const [progress, setProgress] = useState(0)
   const [internalNotes, setInternalNotes] = useState('')
@@ -60,9 +58,6 @@ export function FeatureEditForm({
       executiveSummary: executiveSummary.trim() || undefined,
       clientVisibility,
     })
-    if (onLogUpdate) {
-      onLogUpdate(editing.featureId, 'Feature updated manually')
-    }
     onClose()
   }
 

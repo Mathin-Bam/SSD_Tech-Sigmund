@@ -141,12 +141,15 @@ export function useFeatures(): UseFeaturesReturn {
       // 3. Log the change
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await (supabase.from('update_logs') as any).insert({
+        const { error: logError } = await (supabase.from('update_logs') as any).insert({
           feature_id: featureId,
           changed_by: user.id,
           change_type: 'manual',
           note: `Updated: ${Object.keys(patch).join(', ')}`
         })
+        if (logError) {
+          console.error(`Audit log insert failed for feature ${featureId} with changes [${Object.keys(patch).join(', ')}]:`, logError.message)
+        }
       }
     } catch (err: any) {
       console.error('Update failed:', err.message)

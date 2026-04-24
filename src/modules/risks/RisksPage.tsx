@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { daysUntilDeadline, deadlineAlerts, getSeverityLevel } from '../../domain/rules'
+import { daysUntilDeadline, deadlineAlerts, getSeverityLevel, type SeverityLevel } from '../../domain/rules'
 import { getInitials, formatDate, avatarGradient } from '../../shared/utils/formatters'
 import type { Feature } from '../../domain/types'
 import { Badge } from '../../shared/ui/components'
@@ -12,18 +12,6 @@ const SEVERITY_META: Record<SeverityLevel, { label: string; color: string; borde
   high:     { label: 'High',     color: '#f59e0b', borderColor: '#f59e0b',  bgColor: 'rgba(245,158,11,0.08)' },
   medium:   { label: 'Medium',   color: '#f59e0b', borderColor: '#f59e0b',  bgColor: 'rgba(245,158,11,0.06)' },
   low:      { label: 'Low',      color: '#64748b', borderColor: '#334155',  bgColor: 'rgba(255,255,255,0.03)' },
-}
-
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#e31837,#f97316)',
-  'linear-gradient(135deg,#3b82f6,#a78bfa)',
-  'linear-gradient(135deg,#22c55e,#06b6d4)',
-  'linear-gradient(135deg,#f59e0b,#ef4444)',
-]
-
-function avatarGradient(name: string) {
-  const idx = name.charCodeAt(0) % AVATAR_GRADIENTS.length
-  return AVATAR_GRADIENTS[idx]
 }
 
 // ─── KPI Stat Card ────────────────────────────────────────────────────────────
@@ -340,6 +328,13 @@ export function RisksPage({ features }: { features: Feature[] }) {
   const atRisk    = useMemo(() => features.filter((f) => getSeverityLevel(f) === 'high' || getSeverityLevel(f) === 'medium'), [features])
   const dlAlerts  = useMemo(() => features.filter((f) => deadlineAlerts(f).some((a) => a.type === 'due_soon' || a.type === 'overdue')), [features])
 
+  const atRiskUniqueCount = useMemo(() => {
+    const uniqueIds = new Set<string>()
+    atRisk.forEach(f => uniqueIds.add(f.featureId))
+    dlAlerts.forEach(f => uniqueIds.add(f.featureId))
+    return uniqueIds.size
+  }, [atRisk, dlAlerts])
+
   // resolved this "week" — for demo, features with progress >= 90 or status completed
   const resolvedCount = features.filter((f) => f.status === 'Completed' || f.progress >= 90).length
 
@@ -381,7 +376,7 @@ export function RisksPage({ features }: { features: Feature[] }) {
         <StatCard
           icon="warning"
           label="At Risk (Next 7 Days)"
-          value={atRisk.length + dlAlerts.length}
+          value={atRiskUniqueCount}
           color="#f59e0b"
           glowColor="#f59e0b"
           sub="Features approaching deadline"

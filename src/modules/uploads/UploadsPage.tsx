@@ -1,19 +1,27 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Feature } from '../../domain/types'
 import { Badge, Section } from '../../shared/ui/components'
 import { parseUploadCsv, uploadTemplateHeaders } from './parser'
+
+function normalizeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  return 'An unknown error occurred'
+}
 
 export function UploadsPage({ onMergeFeatures }: { onMergeFeatures: (features: Feature[]) => Promise<void> }) {
   const [text, setText] = useState(uploadTemplateHeaders())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   const result = useMemo(() => {
     try {
       return parseUploadCsv(text)
-    } catch (err: any) {
-      return { records: [], errors: [err.message] }
+    } catch (err: unknown) {
+      return { records: [], errors: [normalizeError(err)] }
     }
   }, [text])
 
@@ -25,12 +33,29 @@ export function UploadsPage({ onMergeFeatures }: { onMergeFeatures: (features: F
       setShowConfirm(false)
       setText(uploadTemplateHeaders()) // Reset on success
       alert('Upload successful!')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(normalizeError(err))
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (showConfirm && modalRef.current) {
+      modalRef.current.focus()
+    }
+  }, [showConfirm])
+
+  useEffect(() => {
+    if (!showConfirm) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowConfirm(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showConfirm])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -48,8 +73,17 @@ export function UploadsPage({ onMergeFeatures }: { onMergeFeatures: (features: F
 
     const reader = new FileReader()
     reader.onload = (ev) => {
-      setText(ev.target?.result as string)
-      setError(null)
+      const r = ev.target?.result
+      if (typeof r === 'string') {
+        setText(r)
+        setError(null)
+      } else {
+        setText('')
+        setError('Unexpected file content')
+      }
+    }
+    reader.onerror = () => {
+      setError(reader.error?.message || 'File read error')
     }
     reader.readAsText(file)
   }
@@ -60,20 +94,36 @@ export function UploadsPage({ onMergeFeatures }: { onMergeFeatures: (features: F
         <p className="small">Upload order: create phase, add features, assign owners, set deadlines, update progress, mark risks, move stages, archive phase.</p>
         
         <div style={{ margin: '1rem 0' }}>
-          <label className="btn-ghost" style={{ display: 'inline-block', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
+            aria-label="CSV file upload"
+          />
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Choose CSV file to upload"
+          >
             Choose CSV File
-            <input type="file" accept=".csv" onChange={handleFileChange} style={{ display: 'none' }} />
-          </label>
+          </button>
           {error && <p style={{ color: '#e31837', fontSize: '0.8rem', marginTop: '0.5rem' }}>{error}</p>}
         </div>
 
-        <textarea 
-          value={text} 
+        <label htmlFor="upload-textarea" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+          Paste CSV text
+        </label>
+        <textarea
+          id="upload-textarea"
+          value={text}
           onChange={(e) => {
             setText(e.target.value)
             setError(null)
-          }} 
-          rows={12} 
+          }}
+          rows={12}
         />
         
         <div className="row-gap">
@@ -104,11 +154,19 @@ export function UploadsPage({ onMergeFeatures }: { onMergeFeatures: (features: F
 
       {showConfirm && (
         <div className="modal-backdrop" onClick={() => setShowConfirm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={modalRef}
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm Upload"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
             <Section title="Confirm Upload">
               <p>You are about to upsert <strong>{result.records.length}</strong> features. Existing features with the same IDs will be updated.</p>
               <div className="modal-actions">
-                <button type="button" className="btn-ghost" onClick={() => setShowConfirm(false)}>Cancel</button>
+                <button type="button" className="btn-ghost" onClick={() => setShowConfirm(false)} disabled={loading}>Cancel</button>
                 <button type="button" onClick={handleApply} disabled={loading}>
                   {loading ? 'Uploading...' : 'Confirm & Proceed'}
                 </button>

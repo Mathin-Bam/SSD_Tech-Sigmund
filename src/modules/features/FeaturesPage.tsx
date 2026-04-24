@@ -276,7 +276,6 @@ export function FeaturesPage({
         open={editOpen && role === 'admin'}
         onClose={() => setEditOpen(false)}
         onSave={onUpdateFeature}
-        onLogUpdate={(fid, note) => addLog(fid, note, 'manual')}
       />
     </div>
   )
