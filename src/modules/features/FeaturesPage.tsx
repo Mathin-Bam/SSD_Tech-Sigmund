@@ -198,10 +198,47 @@ export function FeaturesPage({
             ))}
           </div>
 
+          {selected.progress >= 100 && selected.mvpUrl && (
+            <div style={{ marginTop: '0.75rem', marginBottom: '1rem' }}>
+              <a
+                href={selected.mvpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  background: 'var(--brand-primary)',
+                  color: 'var(--brand-on-primary)',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-primary-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--brand-primary)')}
+              >
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 16, fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}
+                >
+                  rocket_launch
+                </span>
+                View MVP Demo
+              </a>
+            </div>
+          )}
+
           {selected.executiveSummary ? <p className="exec-summary">{selected.executiveSummary}</p> : null}
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{selected.description}</p>
           <p className="small" style={{ marginTop: '0.5rem' }}>
-            Dependencies: {selected.dependencies.join(', ') || 'None'} &nbsp;·&nbsp; Blocker: {selected.blockerNote || 'None'}
+            Dependencies: {selected.dependencies.join(', ') || 'None'}
+            {role === 'admin' && (
+              <> &nbsp;·&nbsp; Blocker: {selected.blockerNote || 'None'}</>
+            )}
           </p>
           <div className="row-gap">
             {deadlineAlerts(selected).map((alert) => (
@@ -214,7 +251,7 @@ export function FeaturesPage({
           </div>
           <div className="row-gap feature-links" style={{ marginTop: '0.75rem' }}>
             {selected.mvpUrl ? <ExternalLinkButton href={selected.mvpUrl}>Open MVP / Demo</ExternalLinkButton> : null}
-            {selected.srsRequirementId ? (
+            {role === 'admin' && selected.srsRequirementId ? (
               /^https?:\/\//i.test(selected.srsRequirementId) ? (
                 <ExternalLinkButton href={selected.srsRequirementId}>SRS Document</ExternalLinkButton>
               ) : (

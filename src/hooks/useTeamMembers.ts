@@ -69,27 +69,20 @@ export function useTeamMembers(): UseTeamMembersReturn {
 
   const inviteMember = async (email: string, fullName: string, role: string) => {
     try {
-      // TODO: Implementation of Edge Function 'invite-member' in Phase 5
-      // This function should use service_role key to invite user via Auth
-      // For now, we invoke it and it will be handled by the backend later.
-      const { error: inviteError } = await supabase.functions.invoke('invite-member', {
+      const { data, error: inviteError } = await supabase.functions.invoke('invite-member', {
         body: { email, fullName, role }
       })
 
       if (inviteError) {
-        // Since the function might not exist yet, we also manually insert to DB for testing UI
-        console.warn('Edge Function not found or failed, falling back to direct DB insert for UI testing')
-        const { error: dbError } = await (supabase.from('team_members') as any).insert({
-          user_id: `U-${Math.random().toString(36).slice(2, 7)}`,
-          email,
-          full_name: fullName,
-          role,
-          department: 'Engineering',
-          availability: 'Available',
-          active: true
-        })
-        if (dbError) throw dbError
+        throw new Error(inviteError.message || 'Edge function invocation failed')
       }
+
+      if (data && data.error) {
+        throw new Error(data.error)
+      }
+
+      // Refresh local list to show the newly invited user
+      await fetchMembers()
     } catch (err: any) {
       console.error('Invite failed:', err.message)
       throw err

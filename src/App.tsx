@@ -15,6 +15,7 @@ import { WelcomePage } from './modules/auth/WelcomePage'
 import { LoginPage } from './modules/auth/LoginPage'
 import { ProtectedRoute } from './modules/auth/ProtectedRoute'
 import { OnboardingPage } from './modules/admin/OnboardingPage'
+import { SettingsPage } from './modules/admin/SettingsPage'
 
 // ── Unauthenticated flow: Welcome → Login ─────────────────
 function AuthFlow() {
@@ -53,6 +54,16 @@ function Dashboard() {
             element={
               role === 'admin' ? (
                 <OnboardingPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              role === 'admin' ? (
+                <SettingsPage />
               ) : (
                 <Navigate to="/" replace />
               )

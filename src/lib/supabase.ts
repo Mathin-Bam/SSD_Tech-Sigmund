@@ -189,6 +189,26 @@ export type Database = {
           active?: boolean
         }
       }
+      system_settings: {
+        Row: {
+          key: string
+          value: any
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          key: string
+          value: any
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          key?: string
+          value?: any
+          updated_at?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
