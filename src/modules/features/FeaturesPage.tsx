@@ -26,7 +26,8 @@ export function FeaturesPage({
 
   const rows = useMemo(() => {
     return features.filter((f) => {
-      if (search && !f.featureName.toLowerCase().includes(search.toLowerCase())) return false
+      const nameMatch = search ? (f.featureName || '').toLowerCase().includes(search.toLowerCase()) : true
+      if (!nameMatch) return false
       if (phaseFilter !== 'All' && f.phaseName !== phaseFilter) return false
       if (stageFilter !== 'All' && f.stage !== stageFilter) return false
       if (riskFilter !== 'All' && f.onTrackStatus !== riskFilter) return false
@@ -235,7 +236,7 @@ export function FeaturesPage({
           {selected.executiveSummary ? <p className="exec-summary">{selected.executiveSummary}</p> : null}
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{selected.description}</p>
           <p className="small" style={{ marginTop: '0.5rem' }}>
-            Dependencies: {selected.dependencies.join(', ') || 'None'}
+            Dependencies: {(selected.dependencies || []).join(', ') || 'None'}
             {role === 'admin' && (
               <> &nbsp;·&nbsp; Blocker: {selected.blockerNote || 'None'}</>
             )}
