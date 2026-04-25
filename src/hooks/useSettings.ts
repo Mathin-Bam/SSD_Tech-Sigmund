@@ -56,7 +56,7 @@ export function useSettings() {
         .from('system_settings')
         .upsert({
           key: 'github_integration',
-          value: newSettings as any,
+          value: newSettings,
           updated_at: new Date().toISOString()
         })
 
