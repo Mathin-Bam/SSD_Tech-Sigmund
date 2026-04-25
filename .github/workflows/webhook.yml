@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Webhook to Supabase
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         env:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           WEBHOOK_URL: "https://ltxrsvslhxycaxcqerty.supabase.co/functions/v1/github-webhook"
