@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SSD-Tech Sigmund — Administrator &amp; Executive Tutorial</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --brand: #c41230;
+      --bg: #ffffff;
+      --code: #f1f5f9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+      font-size: 11pt;
+      margin: 0;
+      padding: 2rem 2.5rem 3rem;
+      max-width: 52rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      border-bottom: 3px solid var(--brand);
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+    }
+    h2 {
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      font-size: 1.2rem;
+      margin-top: 2rem;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      font-size: 1.05rem;
+      margin-top: 1.25rem;
+      page-break-after: avoid;
+    }
+    p { margin: 0.65rem 0; }
+    ul, ol { margin: 0.5rem 0 0.75rem 1.25rem; padding-left: 0.25rem; }
+    li { margin: 0.35rem 0; }
+    .meta {
+      font-family: system-ui, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+    .toc {
+      font-family: system-ui, sans-serif;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 1rem 1.25rem 1.25rem;
+      margin: 1.5rem 0 2rem;
+      page-break-inside: avoid;
+    }
+    .toc strong { display: block; margin-bottom: 0.5rem; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc a { color: var(--brand); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, sans-serif;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f1f5f9; font-weight: 600; }
+    code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.88em; background: var(--code); padding: 0.1em 0.35em; border-radius: 3px; }
+    .callout {
+      border-left: 4px solid var(--brand);
+      background: #fff1f2;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      page-break-inside: avoid;
+    }
+    .goal {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 1rem;
+      margin: 1.25rem 0;
+      page-break-inside: avoid;
+    }
+    .goal strong { font-family: system-ui, sans-serif; }
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+    @media print {
+      body { padding: 0.75in; font-size: 10pt; max-width: none; }
+      h2 { page-break-before: auto; }
+      .page-break { page-break-before: always; }
+      a[href^="http"]::after { content: ""; }
+      .toc a { color: inherit; text-decoration: none; }
+    }
+    @page { margin: 0.65in; }
+  </style>
+</head>
+<body>
+
+<h1 id="top">SSD-Tech Sigmund — Project Tracker</h1>
+<p class="meta"><strong>Administrator &amp; Executive Tutorial</strong><br />
+Document purpose: explain how the web application works, how client executives see project progress in near real time, and how administrators curate data, visibility, and delivery narratives aligned to the project plan.<br />
+<strong>To create a PDF:</strong> open this file in Chrome or Edge, press <span class="mono">Ctrl+P</span> (or <span class="mono">Cmd+P</span>), choose <em>Save as PDF</em> as the destination, then save.</p>
+
+<div class="goal">
+  <strong>Product goals (as implemented in this codebase)</strong>
+  <ol style="margin-top:0.5rem;">
+    <li><strong>Semi-automatic project updates for the client:</strong> feature data and activity logs live in Supabase; the UI subscribes to database changes so dashboards refresh as soon as records change. Optional GitHub-related automation is configurable under admin Settings (webhook processing and log message templates).</li>
+    <li><strong>Maximum editable access for admins:</strong> administrators can bulk-import or update features via CSV, edit client-facing summaries and visibility flags per feature, manage team onboarding, and configure integration settings. Executives receive a streamlined navigation label (&ldquo;Client Portal&rdquo;) and cannot reach admin-only routes.</li>
+  </ol>
+</div>
+
+<nav class="toc" aria-label="Table of contents">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#architecture">How the application is built</a></li>
+    <li><a href="#workflow">End-to-end workflow</a></li>
+    <li><a href="#executive">Executive (client) guide</a></li>
+    <li><a href="#admin">Administrator guide</a></li>
+    <li><a href="#executive-view">Curating the &ldquo;executive view&rdquo; and client narrative</a></li>
+    <li><a href="#privileges">Privileges and access matrix</a></li>
+    <li><a href="#data">Data model and live updates</a></li>
+  </ol>
+</nav>
+
+<h2 id="architecture">1. How the application is built</h2>
+<p>The app is a <strong>React</strong> single-page application built with <strong>Vite</strong>, using <strong>React Router</strong> for navigation and <strong>Supabase</strong> (PostgreSQL + Auth + Realtime + Edge Functions) as the backend.</p>
+<ul>
+  <li><strong>Authentication:</strong> Email and password sign-in via Supabase Auth. After login, the app loads the user&rsquo;s row from the <span class="mono">profiles</span> table and reads <span class="mono">role</span>, which must be either <span class="mono">admin</span> or <span class="mono">executive</span>.</li>
+  <li><strong>Authorization in the UI:</strong> Routes such as <span class="mono">/onboarding</span>, <span class="mono">/settings</span>, and <span class="mono">/uploads</span> are only mounted for users whose profile role is <span class="mono">admin</span>. Executives who attempt those URLs are redirected to the overview.</li>
+  <li><strong>Feature data:</strong> Rows in the <span class="mono">features</span> table drive Overview metrics, the feature registry, timeline, risks, and team workload. If the database returns no rows or errors occur, the app falls back to bundled <em>seed</em> sample data so the UI remains demonstrable.</li>
+  <li><strong>Phases:</strong> Phase definitions used in the Overview and Timeline are currently supplied from static seed data in the codebase (not loaded from Supabase in the current version). Feature rows still carry <span class="mono">phaseId</span> and <span class="mono">phaseName</span> for grouping and reporting.</li>
+  <li><strong>Real time:</strong> The features and team_members hooks subscribe to Supabase Realtime <span class="mono">postgres_changes</span> on their tables, then refetch. When any authorized client updates a row, connected browsers refresh automatically without a manual reload.</li>
+</ul>
+
+<h2 id="workflow">2. End-to-end workflow</h2>
+<ol>
+  <li><strong>Welcome &amp; project selection:</strong> Unauthenticated users land on a welcome screen, choose a project card (for example &ldquo;SSD-Tech Project Tracker&rdquo;), then continue to login.</li>
+  <li><strong>Login:</strong> Supabase <span class="mono">signInWithPassword</span>. On success, the session is established and the dashboard loads.</li>
+  <li><strong>Role resolution:</strong> <span class="mono">AuthProvider</span> fetches <span class="mono">profiles.role</span>. That role drives sidebar items (admin-only links) and page-level behavior (for example whether clicking a feature row opens the editor).</li>
+  <li><strong>Daily operations:</strong> Admins maintain features (UI edits and/or CSV uploads), optional GitHub-driven log entries (when wired on the server side), and team membership. Executives consume Overview, Features, Timeline, Team, and Risks for status and delivery confidence.</li>
+  <li><strong>Audit trail:</strong> When an admin saves certain fields through the feature editor, the app inserts a row into <span class="mono">update_logs</span> describing the change at a high level. Per-feature activity is shown in the Features detail panel and can also receive <span class="mono">github_push</span> type entries when your backend automation inserts them.</li>
+</ol>
+
+<hr class="page-break" />
+
+<h2 id="executive">3. Executive (client) guide</h2>
+<p>This section is written for <strong>client executives and steering stakeholders</strong> who need a trustworthy, current picture of delivery without operating internal tools.</p>
+
+<h3>3.1 What you can rely on</h3>
+<ul>
+  <li><strong>Executive Overview:</strong> Portfolio-level metrics (phases, completion counts, risk counts, testing load, assignee breadth, overall completion percentage derived from average feature progress). A <strong>LIVE</strong> indicator on the overview communicates that the view is tied to live data refresh behavior.</li>
+  <li><strong>Major Deliverables:</strong> Highlights features that have an MVP link, SRS reference, and/or executive summary, with status badges (on track, delayed, completed, and so on).</li>
+  <li><strong>Phase Overview:</strong> Per-phase completion bars and counts of in-progress, completed, and delayed features.</li>
+  <li><strong>Feature Tracker:</strong> Searchable, filterable table of features (phase, stage, on-track status). Click a row to read details: owner, priority, description, executive summary, dependencies, deadline alert chips, and links to MVP demos where configured.</li>
+  <li><strong>Project Timeline:</strong> Milestone-oriented view: current focus, filters (in progress, completed, blocked, at risk), expandable cards with tasks, summaries, blockers, and dependencies; sidebar stage distribution and active risks.</li>
+  <li><strong>Team:</strong> Roster with current assignment snapshot, stage, due date, next task, and capacity badge (available, near capacity, overloaded).</li>
+  <li><strong>Risks &amp; Blockers:</strong> Concentrated view of items that are not fully on track or have deadline or staleness alerts, with severity styling and escalation-oriented panels (some sidebar actions are presentational in the current UI).</li>
+</ul>
+
+<h3>3.2 What executives do not see (by design)</h3>
+<ul>
+  <li><strong>Internal-only fields:</strong> GitHub pull request URLs, internal developer notes, and raw blocker text in some contexts are restricted to administrators so the client narrative stays clean while delivery teams retain context.</li>
+  <li><strong>Admin navigation:</strong> Onboarding, Uploads, and Settings are hidden from the executive sidebar.</li>
+  <li><strong>Inline editing:</strong> Executives do not open the modal feature editor; they read curated fields prepared by the delivery organization.</li>
+</ul>
+
+<h3>3.3 How to use the portal effectively</h3>
+<ol>
+  <li>Start at <strong>Overview</strong> each week for the portfolio pulse, then drill into <strong>Timeline</strong> for sequencing and <strong>Risks</strong> when delivery confidence is the question.</li>
+  <li>Use <strong>Feature Tracker</strong> filters when you care about a single phase or a specific delivery stage (for example everything in testing).</li>
+  <li>Open <strong>MVP / Demo</strong> links when provided to validate tangible progress against expectations.</li>
+  <li>Read <strong>Executive summary</strong> text on features and deliverable cards first; it is the concise client-facing storyline maintained by admins.</li>
+</ol>
+
+<hr class="page-break" />
+
+<h2 id="admin">4. Administrator guide</h2>
+<p>This section is for <strong>project administrators, PMs, and delivery leads</strong> responsible for accuracy, client messaging, and access control.</p>
+
+<h3>4.1 Navigation exclusive to admins</h3>
+<ul>
+  <li><strong>Onboarding:</strong> Invite users and manage the active team list. Invitations are executed through the Supabase Edge Function <span class="mono">invite-member</span>, which requires the caller to be an admin, creates or invites the auth user, sets <span class="mono">profiles.role</span>, and upserts <span class="mono">team_members</span>.</li>
+  <li><strong>Uploads:</strong> Bulk import or update features from CSV. Parsed rows are upserted into <span class="mono">features</span> on <span class="mono">feature_id</span>. Use this for sprint planning imports, replanning waves, or reconciling spreadsheets with the database.</li>
+  <li><strong>Settings:</strong> GitHub webhook automation toggles and the activity log message template (placeholders <span class="mono">{sha}</span>, <span class="mono">{message}</span>, <span class="mono">{url}</span>). This supports semi-automatic progress narration when your repository integration writes matching <span class="mono">update_logs</span> rows (SRS-tagged commits as described in the in-app copy).</li>
+</ul>
+
+<h3>4.2 Feature maintenance (single-item editor)</h3>
+<p>On <strong>Features</strong>, admins click a row to open the <strong>Edit</strong> modal. Saved fields (mapped to Supabase) include:</p>
+<ul>
+  <li><strong>Progress (0–100):</strong> Drives completion rings, bars, and summary averages; also feeds on-track classification together with deadlines and status.</li>
+  <li><strong>Assigned developer:</strong> Dropdown sourced from <span class="mono">team_members</span>. Ensure roster names align with how you assign work in feature rows for consistent Team page linkage.</li>
+  <li><strong>Executive summary:</strong> Short client-facing status; appears on Overview deliverable cards, feature details, timeline, and risk cards.</li>
+  <li><strong>MVP / demo URL:</strong> External demo link surfaced to executives.</li>
+  <li><strong>SRS requirement ID:</strong> May be a plain id (shown as a badge) or a full URL (rendered as a document link on admin-heavy views).</li>
+  <li><strong>GitHub PR URL and internal notes:</strong> Visible to admins only in relevant views.</li>
+  <li><strong>Visible in Executive view:</strong> Checkbox mapped to <span class="mono">client_visibility</span>. Admins use this to hide internal or sensitive work items from client-facing curation workflows. <em>Note:</em> ensure your organization&rsquo;s policy for whether downstream pages filter by this flag is aligned with how you use the database (the field is stored and editable for governance and future filtering).</li>
+</ul>
+<p>Each successful save from this path also appends an <strong>audit-style</strong> row to <span class="mono">update_logs</span> listing which fields changed.</p>
+
+<h3>4.3 Bulk CSV workflow (Uploads page)</h3>
+<ol>
+  <li>Click <strong>Choose CSV File</strong> or paste CSV into the text area. Maximum file size enforced in UI: 2 MB.</li>
+  <li>Required columns match the parser: feature identity, scheduling, ownership, stage, status, progress, tasks, QA and design/dev status strings, last update metadata, and <span class="mono">clientVisibility</span> as the string <span class="mono">true</span> or <span class="mono">false</span>.</li>
+  <li>Optional columns include revised deadline, on-track status, executive summary, URLs, and internal notes.</li>
+  <li>Use <strong>Copy Template Headers</strong> to start a valid sheet. Dependencies in CSV use pipe <span class="mono">|</span> separators.</li>
+  <li><strong>Apply Upload</strong> runs validation; confirm the modal to upsert. Existing IDs are updated, new IDs are inserted.</li>
+</ol>
+
+<h3>4.4 Team onboarding and removal</h3>
+<ul>
+  <li>Fill name, email, and role, then <strong>Send Invite</strong>. The Edge Function validates that only an admin can invite and that the invited <strong>portal role</strong> is one of the allowed values enforced server-side: <span class="mono">admin</span> or <span class="mono">executive</span> (these control dashboard privileges and are stored on <span class="mono">profiles.role</span>).</li>
+  <li><strong>Remove</strong> deactivates a member in <span class="mono">team_members</span> (<span class="mono">active: false</span>); the list shows active members only.</li>
+</ul>
+<p class="callout"><strong>Deployment note:</strong> If your onboarding form collects a <em>job title</em> (for example &ldquo;Frontend Developer&rdquo;) but the Edge Function expects a <em>portal role</em> (<span class="mono">admin</span> | <span class="mono">executive</span>), invitations will fail validation until the UI and API agree on one payload shape—for example a dedicated &ldquo;Portal access&rdquo; selector for invitees plus a separate job-title field stored only on <span class="mono">team_members</span>.</p>
+
+<hr class="page-break" />
+
+<h2 id="executive-view">5. Curating the executive view and delivery logs</h2>
+<p>Your operational goal is a <strong>semi-automatic</strong> client display: numbers and statuses update in real time from the database, while humans control the narrative and boundaries.</p>
+
+<h3>5.1 Narrative layer</h3>
+<ul>
+  <li><strong>Executive summary</strong> per feature is the primary prose control for what executives read in multiple surfaces.</li>
+  <li><strong>Progress and deadlines</strong> should be kept honest; the app computes <strong>on-track status</strong> from rules combining completion, blocked/delayed flags, and proximity to deadlines.</li>
+  <li><strong>Activity History</strong> on the feature detail panel shows the last several <span class="mono">update_logs</span> entries with author display name and timestamp—useful for demonstrating cadence to the client alongside summaries.</li>
+</ul>
+
+<h3>5.2 Automation layer (optional)</h3>
+<ul>
+  <li>Configure GitHub integration messaging under <strong>Settings</strong> so automated inserts into <span class="mono">update_logs</span> read consistently (for example commit SHA and message substitution).</li>
+  <li>When developers include SRS tags in commit messages (per in-app guidance), server-side automation can attach those events to the correct feature for traceability from code motion to client-visible history.</li>
+</ul>
+
+<h3>5.3 Organizational layer</h3>
+<ul>
+  <li>Use <strong>CSV uploads</strong> for batch realignment after planning meetings.</li>
+  <li>Use <strong>client visibility</strong> to keep internal-only features in the system without exposing them in client-facing storylines, according to your delivery policy.</li>
+</ul>
+
+<h2 id="privileges">6. Privileges and access matrix</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Capability</th>
+      <th>Executive</th>
+      <th>Admin</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>View Overview metrics &amp; phase health</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>View Major Deliverables (MVP, SRS, summary)</td><td>Yes (PR link omitted)</td><td>Yes (includes PR when set)</td></tr>
+    <tr><td>View / filter Feature registry</td><td>Yes (read-only)</td><td>Yes</td></tr>
+    <tr><td>Open feature editor &amp; save to database</td><td>No</td><td>Yes</td></tr>
+    <tr><td>View internal notes &amp; blocker detail in feature panel</td><td>Limited (e.g. blocker line not shown same as admin)</td><td>Yes</td></tr>
+    <tr><td>View activity / update logs on feature</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Timeline, Team, Risks pages</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Onboarding (invites, remove)</td><td>No (route blocked)</td><td>Yes</td></tr>
+    <tr><td>CSV bulk upload</td><td>No</td><td>Yes</td></tr>
+    <tr><td>GitHub integration settings</td><td>No</td><td>Yes</td></tr>
+    <tr><td>Sign out</td><td>Yes</td><td>Yes</td></tr>
+  </tbody>
+</table>
+<p class="callout"><strong>Security note:</strong> Row-level security and API policies in Supabase must mirror these UI expectations. The application assumes trustworthy server-side rules; training should remind admins not to share executive credentials broadly.</p>
+
+<h2 id="data">7. Data model and live updates (reference)</h2>
+<ul>
+  <li><span class="mono">profiles</span> — user id, <span class="mono">role</span> (<span class="mono">admin</span> | <span class="mono">executive</span>), display name.</li>
+  <li><span class="mono">features</span> — full delivery record for each feature; primary driver of dashboards.</li>
+  <li><span class="mono">update_logs</span> — per-feature audit and automation trail (<span class="mono">manual</span> | <span class="mono">github_push</span>).</li>
+  <li><span class="mono">team_members</span> — roster for assignments and onboarding.</li>
+  <li><span class="mono">system_settings</span> — key/value store; GitHub integration JSON under <span class="mono">github_integration</span>.</li>
+</ul>
+<p><strong>Realtime:</strong> Subscriptions on <span class="mono">features</span> and <span class="mono">team_members</span> refetch on change. <span class="mono">update_logs</span> uses a filtered channel per selected feature so detail panels stay fresh.</p>
+
+<hr />
+<p style="font-size:0.9rem;color:var(--muted);">SSD-Tech Sigmund Project Tracker — tutorial generated from application source structure. For PDF output, print this page to PDF from your browser.</p>
+
+</body>
+</html>
