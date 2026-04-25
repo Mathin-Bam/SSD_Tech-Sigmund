@@ -128,7 +128,7 @@ function RiskCard({ feature }: { feature: Feature }) {
           text={
             feature.blockerNote
               ? feature.blockerNote
-              : feature.dependencies.join(', ')
+              : (feature.dependencies || []).join(', ')
           }
           assignee={feature.dependencies.length > 0 ? feature.assignedTo : undefined}
         />

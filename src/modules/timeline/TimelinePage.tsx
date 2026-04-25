@@ -237,10 +237,10 @@ function MilestoneCard({ feature, expanded, onToggle }: {
               ))}
             </div>
           )}
-          {(feature.dependencies.length > 0) && (
+          {((feature.dependencies || []).length > 0) && (
             <p className="tl-dep-row">
               <span className="material-symbols-rounded" style={{ fontSize: 13, verticalAlign: 'middle', color: 'var(--text-muted)' }}>link</span>
-              &nbsp;Dependencies: <em>{feature.dependencies.join(', ')}</em>
+              &nbsp;Dependencies: <em>{(feature.dependencies || []).join(', ')}</em>
             </p>
           )}
         </div>
