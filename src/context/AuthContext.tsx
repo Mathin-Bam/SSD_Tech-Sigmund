@@ -34,30 +34,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // 1. Initial Session Check
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      
-      if (currentUser) {
-        await fetchProfile(currentUser.id)
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+        
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        
+        if (currentUser) {
+          await fetchProfile(currentUser.id)
+        }
+      } catch (err) {
+        console.error('Failed to check session:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     checkSession()
 
     // 2. Auth State Subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
+      try {
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
 
-      if (event === 'SIGNED_IN' && currentUser) {
-        await fetchProfile(currentUser.id)
-      } else if (event === 'SIGNED_OUT') {
-        setRole(null)
+        if (event === 'SIGNED_IN' && currentUser) {
+          await fetchProfile(currentUser.id)
+        } else if (event === 'SIGNED_OUT') {
+          setRole(null)
+        }
+      } catch (err) {
+        console.error('Error handling auth state change:', err)
+      } finally {
+        setLoading(false)
       }
-      
-      setLoading(false)
     })
 
     return () => {
