@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { PageHeader, Section } from '../../shared/ui/components'
 import { useSettings } from '../../hooks/useSettings'
 
@@ -6,6 +6,12 @@ export function SettingsPage() {
   const { githubSettings, loading, error, updateGithubSettings } = useSettings()
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [isEnabled, setIsEnabled] = useState(githubSettings?.enabled ?? false)
+
+  // Keep isEnabled in sync if githubSettings loads asynchronously
+  useEffect(() => {
+    setIsEnabled(githubSettings?.enabled ?? false)
+  }, [githubSettings?.enabled])
 
   if (loading) {
     return (
@@ -63,29 +69,30 @@ export function SettingsPage() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
             <div style={{ position: 'relative', width: '48px', height: '24px' }}>
-              <input 
-                type="checkbox" 
-                name="github_enabled" 
-                defaultChecked={githubSettings?.enabled}
-                style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
+              <input
+                type="checkbox"
+                name="github_enabled"
                 id="github-toggle"
+                checked={isEnabled}
+                onChange={(e) => setIsEnabled(e.target.checked)}
+                style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
               />
-              <div 
+              <div
                 className="toggle-track"
                 style={{
                   position: 'absolute',
                   top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundColor: githubSettings?.enabled ? 'var(--brand-primary)' : 'var(--bg-elevated)',
+                  backgroundColor: isEnabled ? 'var(--brand-primary)' : 'var(--bg-elevated)',
                   borderRadius: '24px',
                   transition: '0.3s',
                 }}
               />
-              <div 
+              <div
                 className="toggle-thumb"
                 style={{
                   position: 'absolute',
                   top: '2px',
-                  left: githubSettings?.enabled ? '26px' : '2px',
+                  left: isEnabled ? '26px' : '2px',
                   width: '20px',
                   height: '20px',
                   backgroundColor: 'white',
@@ -96,21 +103,6 @@ export function SettingsPage() {
             </div>
             <span style={{ fontWeight: '500' }}>Enable Webhook Processing</span>
           </label>
-
-          {/* Simple script to handle visual toggle immediately */}
-          <script dangerouslySetInnerHTML={{ __html: `
-            document.getElementById('github-toggle')?.addEventListener('change', function(e) {
-              const track = e.target.nextElementSibling;
-              const thumb = track.nextElementSibling;
-              if (e.target.checked) {
-                track.style.backgroundColor = 'var(--brand-primary)';
-                thumb.style.left = '26px';
-              } else {
-                track.style.backgroundColor = 'var(--bg-elevated)';
-                thumb.style.left = '2px';
-              }
-            });
-          `}} />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label htmlFor="github_format" style={{ fontWeight: '500', fontSize: '0.875rem' }}>
