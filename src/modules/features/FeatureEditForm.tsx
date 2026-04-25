@@ -88,7 +88,7 @@ export function FeatureEditForm({
               <select id="edit-assignee" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
                 <option value="">-- Unassigned --</option>
                 {teamMembers.map(member => (
-                  <option key={member.userId} value={member.name}>
+                  <option key={member.userId} value={member.userId}>
                     {member.name} ({member.role})
                   </option>
                 ))}
