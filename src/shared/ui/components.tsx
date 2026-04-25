@@ -1,4 +1,18 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+
+export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="page-header" style={{ marginBottom: '2rem' }}>
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>{title}</h1>
+      {subtitle && (
+        <p style={{ color: 'var(--text-muted)', marginTop: '0.375rem', fontSize: '0.9rem' }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
+  )
+}
+
 
 export function Badge({ label, tone = 'default' }: { label: string; tone?: 'default' | 'success' | 'warn' | 'danger' | 'info' }) {
   return <span className={`badge badge-${tone}`}>{label}</span>
@@ -18,7 +32,7 @@ export function MetricCard({
   accent?: string
 }) {
   return (
-    <article className="metric-card" style={{ '--metric-accent': `var(${accent})` } as React.CSSProperties}>
+    <article className="metric-card" style={{ '--metric-accent': `var(${accent})` } as CSSProperties}>
       {icon && <span className="material-symbols-rounded metric-icon">{icon}</span>}
       <p className="muted">{title}</p>
       <h3>{value}</h3>
@@ -56,9 +70,9 @@ export function ProgressRing({ pct, size = 80 }: { pct: number; size?: number })
   )
 }
 
-export function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+export function Section({ title, children, action, style }: { title: string; children: ReactNode; action?: ReactNode; style?: CSSProperties }) {
   return (
-    <section className="section">
+    <section className="section" style={style}>
       <div className="section-header">
         <h2>{title}</h2>
         {action}

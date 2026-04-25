@@ -62,7 +62,7 @@ export function FeatureEditForm({
       srsRequirementId: srsRequirementId.trim() || undefined,
       executiveSummary: executiveSummary.trim() || undefined,
       clientVisibility,
-      assignedTo: assignedTo.trim() || undefined,
+      assignedTo: assignedTo.trim(),
     })
     onClose()
   }

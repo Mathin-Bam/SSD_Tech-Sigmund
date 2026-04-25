@@ -1,6 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 import type { FeatureStatus, FeatureStage, OnTrackStatus } from '../domain/types'
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type Database = {
   public: {
     Tables: {
@@ -192,19 +200,19 @@ export type Database = {
       system_settings: {
         Row: {
           key: string
-          value: any
+          value: Json
           updated_at: string
           created_at: string
         }
         Insert: {
           key: string
-          value: any
+          value: Json
           updated_at?: string
           created_at?: string
         }
         Update: {
           key?: string
-          value?: any
+          value?: Json
           updated_at?: string
           created_at?: string
         }

@@ -26,7 +26,8 @@ export function useSettings() {
 
         if (mounted) {
           if (data) {
-            setGithubSettings(data.value as GithubIntegrationSettings)
+            const row = data as { key: string; value: unknown; updated_at: string }
+            setGithubSettings(row.value as GithubIntegrationSettings)
           } else {
             // Default if not found
             setGithubSettings({
@@ -54,11 +55,12 @@ export function useSettings() {
       setLoading(true)
       const { error } = await supabase
         .from('system_settings')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .upsert({
           key: 'github_integration',
           value: newSettings as any,
           updated_at: new Date().toISOString()
-        })
+        } as any)
 
       if (error) throw error
       setGithubSettings(newSettings)
