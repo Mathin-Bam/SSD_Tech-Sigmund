@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ALLOWED_ROLES = ['admin', 'executive', 'member'] as const;
+const ALLOWED_ROLES = ['admin', 'executive'] as const;
 type AllowedRole = typeof ALLOWED_ROLES[number];
 
 serve(async (req) => {

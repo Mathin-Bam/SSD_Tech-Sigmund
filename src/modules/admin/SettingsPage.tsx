@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { PageHeader, Section } from '../../shared/ui/components'
+import { type FormEvent, useEffect, useState } from 'react'
+import { Section } from '../../shared/ui/components'
 import { useSettings } from '../../hooks/useSettings'
 
 export function SettingsPage() {

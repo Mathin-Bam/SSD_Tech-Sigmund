@@ -18,12 +18,12 @@ export function useSettings() {
       try {
         const { data, error } = await supabase
           .from('system_settings')
-          .select('value')
+          .select('*')
           .eq('key', 'github_integration')
           .single()
 
         if (error && error.code !== 'PGRST116') throw error
-        
+
         if (mounted) {
           if (data) {
             setGithubSettings(data.value as GithubIntegrationSettings)
@@ -56,7 +56,7 @@ export function useSettings() {
         .from('system_settings')
         .upsert({
           key: 'github_integration',
-          value: newSettings,
+          value: newSettings as any,
           updated_at: new Date().toISOString()
         })
 

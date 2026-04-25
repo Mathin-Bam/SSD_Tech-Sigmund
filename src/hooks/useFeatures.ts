@@ -63,6 +63,7 @@ function mapPatchToDb(patch: FeatureUpdateFields): any {
   if ('srsRequirementId' in patch) dbPatch.srs_requirement_id = patch.srsRequirementId
   if ('executiveSummary' in patch) dbPatch.executive_summary = patch.executiveSummary
   if ('clientVisibility' in patch) dbPatch.client_visibility = patch.clientVisibility
+  if ('assignedTo' in patch) dbPatch.assigned_to = patch.assignedTo
   return dbPatch
 }
 
