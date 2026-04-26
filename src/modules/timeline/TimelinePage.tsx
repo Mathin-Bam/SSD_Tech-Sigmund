@@ -381,7 +381,7 @@ export function TimelinePage({
 }: {
   features: Feature[]
   phases: Phase[]
-  role?: 'admin' | 'executive'
+  role?: 'admin' | 'executive' | 'dev'
   onUpdateFeature?: (id: string, patch: Partial<Feature>) => Promise<void>
   onDeleteFeature?: (id: string) => Promise<void>
 }) {

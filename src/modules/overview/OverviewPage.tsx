@@ -192,7 +192,7 @@ export function OverviewPage({
                     <span className="material-symbols-rounded" style={{ color: 'var(--accent-blue)', fontSize: 18 }}>account_tree</span>
                     <div>
                       <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>{row.phase.phaseName}</p>
-                      <p className="small">{row.phase.startDate} → {row.phase.endDate}</p>
+                      <p className="small">{row.phase.startDate} → {row.phase.targetDate}</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

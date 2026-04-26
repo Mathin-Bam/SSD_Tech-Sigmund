@@ -19,7 +19,7 @@ export function FeaturesPage({
 }: {
   features: Feature[]
   teamMembers: TeamMember[]
-  role: 'executive' | 'admin'
+  role: 'executive' | 'admin' | 'dev'
   onUpdateFeature: (featureId: string, patch: Partial<Feature>) => Promise<void>
   onCreateFeature: (newFeature: Partial<Feature>) => Promise<void>
   onDeleteFeature: (featureId: string) => Promise<void>
