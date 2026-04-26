@@ -2,13 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Feature } from '../domain/types'
 import { onTrackClassifier } from '../domain/rules'
-import type { FeatureUpdateFields } from '../modules/features/FeatureEditForm'
+
+export type FeatureUpdateFields = Partial<Feature>
 
 interface UseFeaturesReturn {
   features: Feature[]
   loading: boolean
   error: string | null
+  createFeature: (newFeature: Partial<Feature>) => Promise<void>
   updateFeature: (featureId: string, patch: FeatureUpdateFields) => Promise<void>
+  deleteFeature: (featureId: string) => Promise<void>
   bulkUpsertFeatures: (newFeatures: Feature[]) => Promise<void>
   refetch: () => Promise<void>
 }
@@ -73,6 +76,10 @@ function mapFeatureFromDb(row: any): Feature {
 // Map camelCase patch back to snake_case for DB update
 function mapPatchToDb(patch: FeatureUpdateFields): any {
   const dbPatch: any = {}
+  if ('featureName' in patch) dbPatch.feature_name = patch.featureName
+  if ('moduleName' in patch) dbPatch.module_name = patch.moduleName
+  if ('priority' in patch) dbPatch.priority = patch.priority
+  if ('plannedDeadline' in patch) dbPatch.planned_deadline = patch.plannedDeadline
   if ('status' in patch) dbPatch.status = patch.status
   if ('progress' in patch) dbPatch.progress = patch.progress
   if ('internalNotes' in patch) dbPatch.internal_notes = patch.internalNotes
@@ -262,11 +269,54 @@ export function useFeatures(): UseFeaturesReturn {
     }
   }
 
+  const createFeature = async (newFeature: Partial<Feature>) => {
+    try {
+      const featureId = crypto.randomUUID()
+      const now = new Date().toISOString()
+      const dbRow = {
+        feature_id: featureId,
+        feature_name: newFeature.featureName || 'New Task',
+        module_name: newFeature.moduleName || '',
+        priority: newFeature.priority || 'Medium',
+        planned_deadline: newFeature.plannedDeadline || now,
+        status: 'Not Started',
+        stage: 'Design',
+        progress: 0,
+        start_date: now,
+        last_updated_at: now
+      }
+
+      const { error: insertError } = await (supabase.from('features') as any).insert(dbRow)
+      if (insertError) throw insertError
+
+      await fetchFeatures()
+    } catch (err: any) {
+      console.error('Create failed:', err.message)
+      setError(`Create failed: ${err.message}`)
+      throw err
+    }
+  }
+
+  const deleteFeature = async (featureId: string) => {
+    try {
+      const { error: deleteError } = await supabase.from('features').delete().eq('feature_id', featureId)
+      if (deleteError) throw deleteError
+
+      setFeatures(prev => prev.filter(f => f.featureId !== featureId))
+    } catch (err: any) {
+      console.error('Delete failed:', err.message)
+      setError(`Delete failed: ${err.message}`)
+      throw err
+    }
+  }
+
   return {
     features,
     loading,
     error,
+    createFeature,
     updateFeature,
+    deleteFeature,
     bulkUpsertFeatures,
     refetch: fetchFeatures
   }

@@ -19,7 +19,7 @@ export function KanbanCardOverlay({ feature }: { feature: Feature }) {
 }
 
 // ── Sortable wrapper ──────────────────────────────────────
-export function KanbanCard({ feature }: { feature: Feature }) {
+export function KanbanCard({ feature, onClick }: { feature: Feature; onClick?: (f: Feature) => void }) {
   const {
     attributes,
     listeners,
@@ -37,7 +37,7 @@ export function KanbanCard({ feature }: { feature: Feature }) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => onClick?.(feature)}>
       <KanbanCardInner feature={feature} />
     </div>
   )

@@ -4,6 +4,7 @@ import type { Feature, TeamMember } from '../../domain/types'
 import { Badge, ExternalLinkButton, Section } from '../../shared/ui/components'
 import { useUpdateLogs } from '../../hooks/useUpdateLogs'
 import { FeatureEditForm, type FeatureUpdateFields } from './FeatureEditForm'
+import { FeatureModal } from './FeatureModal'
 import { KanbanBoard } from './KanbanBoard'
 
 type ViewMode = 'table' | 'kanban'
@@ -13,11 +14,15 @@ export function FeaturesPage({
   teamMembers,
   role,
   onUpdateFeature,
+  onCreateFeature,
+  onDeleteFeature,
 }: {
   features: Feature[]
   teamMembers: TeamMember[]
   role: 'executive' | 'admin'
-  onUpdateFeature: (featureId: string, patch: FeatureUpdateFields) => void
+  onUpdateFeature: (featureId: string, patch: Partial<Feature>) => void
+  onCreateFeature: (newFeature: Partial<Feature>) => Promise<void>
+  onDeleteFeature: (featureId: string) => Promise<void>
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const [search, setSearch] = useState('')
@@ -25,7 +30,9 @@ export function FeaturesPage({
   const [stageFilter, setStageFilter] = useState('All')
   const [riskFilter, setRiskFilter] = useState('All')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [editOpen, setEditOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
+  
   const { logs } = useUpdateLogs(selectedId)
 
   const phases = useMemo(() => Array.from(new Set(features.map((f) => f.phaseName))), [features])
@@ -45,13 +52,14 @@ export function FeaturesPage({
 
   useEffect(() => {
     setSelectedId(null)
-    setEditOpen(false)
+    setIsModalOpen(false)
   }, [role])
 
   function handleRowClick(f: Feature) {
     setSelectedId(f.featureId)
     if (role === 'admin') {
-      setEditOpen(true)
+      setModalMode('edit')
+      setIsModalOpen(true)
     }
   }
 
@@ -91,6 +99,33 @@ export function FeaturesPage({
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {role === 'admin' && (
+            <button
+              onClick={() => {
+                setSelectedId(null)
+                setModalMode('create')
+                setIsModalOpen(true)
+              }}
+              style={{
+                background: 'var(--brand-primary)',
+                color: 'white',
+                border: 'none',
+                padding: '0.45rem 1rem',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+                marginRight: '0.5rem'
+              }}
+            >
+              <span className="material-symbols-rounded" style={{ fontSize: 16 }}>add</span>
+              Add Task
+            </button>
+          )}
           {/* View toggle */}
           <div
             style={{
@@ -181,7 +216,7 @@ export function FeaturesPage({
               Features with statuses outside the 5 board columns are only visible in Table view.
             </p>
           )}
-          <KanbanBoard features={rows} onUpdateFeature={handleUpdateFeature} />
+          <KanbanBoard features={rows} onUpdateFeature={handleUpdateFeature} onCardClick={handleRowClick} />
         </section>
       )}
 
@@ -276,7 +311,7 @@ export function FeaturesPage({
             ) : null}
           </Section>
 
-          {selected && !editOpen ? (
+          {selected && !isModalOpen ? (
             <Section title={`Details: ${selected.featureName}`}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
                 {[
@@ -357,7 +392,7 @@ export function FeaturesPage({
 
               {role === 'admin' && (
                 <div className="row-gap" style={{ marginTop: '0.75rem' }}>
-                  <button type="button" onClick={() => setEditOpen(true)}>
+                  <button type="button" onClick={() => { setModalMode('edit'); setIsModalOpen(true); }}>
                     <span className="material-symbols-rounded" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>edit</span>
                     Edit Feature
                   </button>
@@ -401,12 +436,19 @@ export function FeaturesPage({
         </>
       )}
 
-      <FeatureEditForm
-        feature={selected ?? null}
-        open={editOpen && role === 'admin'}
-        onClose={() => setEditOpen(false)}
-        onSave={onUpdateFeature}
-        teamMembers={teamMembers}
+      {/* The Unified Modal */}
+      <FeatureModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        feature={modalMode === 'edit' ? selected ?? null : null}
+        onSave={async (patch) => {
+          if (modalMode === 'create') {
+            await onCreateFeature(patch)
+          } else if (selected) {
+            await handleUpdateFeature(selected.featureId, patch)
+          }
+        }}
+        onDelete={onDeleteFeature}
       />
     </div>
   )

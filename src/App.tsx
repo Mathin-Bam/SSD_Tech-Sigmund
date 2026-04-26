@@ -34,7 +34,7 @@ function Dashboard() {
   const role: 'admin' | 'executive' = authRole ?? 'executive'
 
   // Live Supabase Hooks
-  const { features, updateFeature, bulkUpsertFeatures } = useFeatures()
+  const { features, updateFeature, createFeature, deleteFeature, bulkUpsertFeatures } = useFeatures()
   const { teamMembers } = useTeamMembers()
   const phases = useMemo(() => derivePhasesFromFeatures(features), [features])
 
@@ -51,6 +51,8 @@ function Dashboard() {
                 teamMembers={teamMembers}
                 role={role}
                 onUpdateFeature={updateFeature}
+                onCreateFeature={createFeature}
+                onDeleteFeature={deleteFeature}
               />
             }
           />

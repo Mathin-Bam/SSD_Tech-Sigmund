@@ -53,9 +53,11 @@ export const KANBAN_COLUMNS: KanbanColumnId[] = [
 export function KanbanColumn({
   id,
   features,
+  onCardClick,
 }: {
   id: KanbanColumnId
   features: Feature[]
+  onCardClick?: (f: Feature) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id })
   const meta = COLUMN_META[id]
@@ -175,7 +177,7 @@ export function KanbanColumn({
               </p>
             </div>
           ) : (
-            features.map((f) => <KanbanCard key={f.featureId} feature={f} />)
+            features.map((f) => <KanbanCard key={f.featureId} feature={f} onClick={onCardClick} />)
           )}
         </SortableContext>
       </div>

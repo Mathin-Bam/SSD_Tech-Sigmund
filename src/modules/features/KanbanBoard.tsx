@@ -20,9 +20,10 @@ import { KANBAN_COLUMNS, KanbanColumn, type KanbanColumnId } from './KanbanColum
 interface KanbanBoardProps {
   features: Feature[]
   onUpdateFeature: (featureId: string, patch: FeatureUpdateFields) => Promise<void>
+  onCardClick?: (feature: Feature) => void
 }
 
-export function KanbanBoard({ features, onUpdateFeature }: KanbanBoardProps) {
+export function KanbanBoard({ features, onUpdateFeature, onCardClick }: KanbanBoardProps) {
   // Track which card is being dragged (for the overlay)
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
 
@@ -158,7 +159,7 @@ export function KanbanBoard({ features, onUpdateFeature }: KanbanBoardProps) {
     >
       <div style={boardStyle} role="region" aria-label="Kanban board">
         {KANBAN_COLUMNS.map((colId) => (
-          <KanbanColumn key={colId} id={colId} features={columnFeatures[colId]} />
+          <KanbanColumn key={colId} id={colId} features={columnFeatures[colId]} onCardClick={onCardClick} />
         ))}
       </div>
 
