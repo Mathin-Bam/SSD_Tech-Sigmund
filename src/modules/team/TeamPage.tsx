@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import type { Feature, TeamMember } from '../../domain/types'
 import { Badge, Section } from '../../shared/ui/components'
+import { ChatBox } from './ChatBox'
 
 function getInitials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -12,6 +14,8 @@ const AVAIL_COLORS: Record<string, string> = {
 }
 
 export function TeamPage({ features, teamMembers }: { features: Feature[]; teamMembers: TeamMember[] }) {
+  const [chatPeer, setChatPeer] = useState<TeamMember | null>(null)
+
   return (
     <div className="page">
       <div className="page-header">
@@ -36,6 +40,7 @@ export function TeamPage({ features, teamMembers }: { features: Feature[]; teamM
                 <th>Due Date</th>
                 <th>Next Task</th>
                 <th>Capacity</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -81,6 +86,36 @@ export function TeamPage({ features, teamMembers }: { features: Feature[]; teamM
                         </span>
                       </div>
                     </td>
+                    <td>
+                      <button
+                        onClick={() => setChatPeer(member)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.35rem 0.7rem',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(59,130,246,0.25)',
+                          background: 'rgba(59,130,246,0.08)',
+                          color: '#3b82f6',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(59,130,246,0.18)'
+                          e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(59,130,246,0.08)'
+                          e.currentTarget.style.borderColor = 'rgba(59,130,246,0.25)'
+                        }}
+                      >
+                        <span className="material-symbols-rounded" style={{ fontSize: 15 }}>chat</span>
+                        Message
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -88,6 +123,13 @@ export function TeamPage({ features, teamMembers }: { features: Feature[]; teamM
           </table>
         </div>
       </Section>
+
+      {/* Chat Modal */}
+      <ChatBox
+        isOpen={!!chatPeer}
+        onClose={() => setChatPeer(null)}
+        peer={chatPeer}
+      />
     </div>
   )
 }

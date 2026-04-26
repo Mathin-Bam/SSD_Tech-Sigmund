@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './app/AppShell'
-import { derivePhasesFromFeatures } from './domain/selectors'
 import { useAuth } from './hooks/useAuth'
 import { useFeatures } from './hooks/useFeatures'
+import { usePhases } from './hooks/usePhases'
 import { useTeamMembers } from './hooks/useTeamMembers'
 import { FeaturesPage } from './modules/features/FeaturesPage'
 import { OverviewPage } from './modules/overview/OverviewPage'
@@ -31,32 +31,38 @@ function AuthFlow() {
 // ── Authenticated dashboard ───────────────────────────────
 function Dashboard() {
   const { role: authRole } = useAuth()
-  const role: 'admin' | 'executive' = authRole ?? 'executive'
+  const role: 'admin' | 'executive' | 'dev' = authRole ?? 'executive'
 
   // Live Supabase Hooks
   const { features, updateFeature, createFeature, deleteFeature, bulkUpsertFeatures } = useFeatures()
+  const { phases } = usePhases()
   const { teamMembers } = useTeamMembers()
-  const phases = useMemo(() => derivePhasesFromFeatures(features), [features])
 
   return (
     <Routes>
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell role={role} />}>
-          <Route path="/" element={<OverviewPage features={features} phases={phases} role={role} />} />
+          <Route path="/" element={
+            role === 'dev' ? <Navigate to="/features" replace /> : <OverviewPage features={features} phases={phases} role={role} />
+          } />
           <Route
             path="/features"
             element={
-              <FeaturesPage
-                features={features}
-                teamMembers={teamMembers}
-                role={role}
-                onUpdateFeature={updateFeature}
-                onCreateFeature={createFeature}
-                onDeleteFeature={deleteFeature}
-              />
+              role === 'admin' || role === 'dev' ? (
+                <FeaturesPage
+                  features={features}
+                  teamMembers={teamMembers}
+                  role={role}
+                  onUpdateFeature={updateFeature}
+                  onCreateFeature={createFeature}
+                  onDeleteFeature={deleteFeature}
+                />
+              ) : (
+                <Navigate to="/timeline" replace />
+              )
             }
           />
-          <Route path="/timeline" element={<TimelinePage features={features} phases={phases} />} />
+          <Route path="/timeline" element={<TimelinePage features={features} phases={phases} role={role} onUpdateFeature={updateFeature} onDeleteFeature={deleteFeature} />} />
           <Route path="/team" element={<TeamPage features={features} teamMembers={teamMembers} />} />
           <Route path="/risks" element={<RisksPage features={features} />} />
           <Route

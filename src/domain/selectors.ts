@@ -30,7 +30,7 @@ export function derivePhasesFromFeatures(features: Feature[]): Phase[] {
         phaseId,
         phaseName,
         startDate: startDate || new Date().toISOString().slice(0, 10),
-        endDate: endDate || startDate || new Date().toISOString().slice(0, 10),
+        targetDate: endDate || startDate || new Date().toISOString().slice(0, 10),
         status: rollupStatus(group),
         owner,
       }
@@ -66,7 +66,7 @@ export function computeSummaryMetrics(features: Feature[], phases: Phase[]): Sum
       const today = new Date()
       const active = phases.find((phase) => {
         const start = new Date(phase.startDate)
-        const end = new Date(phase.endDate)
+        const end = new Date(phase.targetDate)
         return start <= today && today <= end
       }) ?? phases.find((phase) => phase.status !== 'Completed') ?? phases[0]
       return active?.phaseName ?? 'N/A'

@@ -15,13 +15,13 @@ export type Database = {
       profiles: {
         Row: {
           id: string
-          role: 'admin' | 'executive'
+          role: 'admin' | 'executive' | 'dev'
           full_name: string | null
           created_at: string
         }
         Insert: {
           id: string
-          role: 'admin' | 'executive'
+          role: 'admin' | 'executive' | 'dev'
           full_name?: string | null
           created_at?: string
         }

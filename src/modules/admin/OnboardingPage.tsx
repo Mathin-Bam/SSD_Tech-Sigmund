@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { useTeamMembers } from '../../hooks/useTeamMembers'
 import { Badge, Section } from '../../shared/ui/components'
+import { supabase } from '../../lib/supabase'
 
 export function OnboardingPage() {
-  const { teamMembers, loading, inviteMember, deactivateMember } = useTeamMembers()
+  const { teamMembers, loading, deactivateMember } = useTeamMembers()
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
-  const [portalRole, setPortalRole] = useState<'admin' | 'executive'>('executive')
+  const [password, setPassword] = useState('')
+  const [portalRole, setPortalRole] = useState<'admin' | 'executive' | 'dev'>('dev')
   const [jobTitle, setJobTitle] = useState('Fullstack Developer')
   const [inviting, setInviting] = useState(false)
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
@@ -19,18 +21,34 @@ export function OnboardingPage() {
     'Project Manager',
   ]
 
-  async function handleInvite(e: FormEvent<HTMLFormElement>) {
+  async function handleCreateUser(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setInviting(true)
     setMsg(null)
     try {
-      await inviteMember(email, fullName, portalRole, jobTitle)
-      setMsg({ text: `Invite sent to ${email}`, type: 'success' })
+      console.log('Invoking admin-create-user with:', { email, fullName, role: portalRole, jobTitle })
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: { email, password, fullName, role: portalRole, jobTitle },
+      })
+
+      console.log('Edge function response:', { data, error })
+
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Edge function invocation failed')
+      }
+
+      if (data && data.error) {
+        throw new Error(data.error)
+      }
+
+      setMsg({ text: `Account created for ${fullName} (${email})`, type: 'success' })
       setEmail('')
       setFullName('')
-      setTimeout(() => setMsg(null), 3000)
+      setPassword('')
+      setTimeout(() => setMsg(null), 4000)
     } catch (err: any) {
-      setMsg({ text: err.message || 'Failed to send invite', type: 'error' })
+      setMsg({ text: err.message || 'Failed to create user', type: 'error' })
     } finally {
       setInviting(false)
     }
@@ -55,12 +73,18 @@ export function OnboardingPage() {
       .slice(0, 2)
   }
 
+  const roleBadgeStyle = (r: string) => {
+    if (r === 'admin') return { bg: '#e31837', color: '#fff', border: 'none' }
+    if (r === 'dev') return { bg: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }
+    return { bg: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.25)' }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <div className="page-header-text">
           <h1>Team Onboarding</h1>
-          <p>Invite developers and manage team access.</p>
+          <p>Create accounts for developers and manage team access.</p>
         </div>
         <span className="page-header-badge">
           <span className="material-symbols-rounded" style={{ fontSize: 14 }}>person_add</span>
@@ -69,9 +93,9 @@ export function OnboardingPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', alignItems: 'start' }}>
-        {/* Invite Form */}
-        <Section title="Invite Member">
-          <form className="edit-form" onSubmit={handleInvite}>
+        {/* Create User Form */}
+        <Section title="Create Team Member">
+          <form className="edit-form" onSubmit={handleCreateUser}>
             <label>
               Full Name
               <input 
@@ -93,12 +117,24 @@ export function OnboardingPage() {
               />
             </label>
             <label>
-              Dashboard access
+              Password
+              <input 
+                required 
+                type="password" 
+                minLength={6}
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                placeholder="Minimum 6 characters"
+              />
+            </label>
+            <label>
+              Dashboard Access
               <select
                 value={portalRole}
-                onChange={(e) => setPortalRole(e.target.value as 'admin' | 'executive')}
+                onChange={(e) => setPortalRole(e.target.value as 'admin' | 'executive' | 'dev')}
                 aria-label="Portal role for sign-in"
               >
+                <option value="dev">Developer (features & timeline)</option>
                 <option value="executive">Executive (client portal)</option>
                 <option value="admin">Admin (full access)</option>
               </select>
@@ -133,7 +169,7 @@ export function OnboardingPage() {
 
             <div className="modal-actions" style={{ marginTop: '1rem' }}>
               <button type="submit" disabled={inviting} style={{ width: '100%' }} aria-busy={inviting}>
-                {inviting ? 'Sending...' : 'Send Invite'}
+                {inviting ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
           </form>
@@ -143,6 +179,8 @@ export function OnboardingPage() {
         <Section title="Active Members">
           {loading ? (
             <p className="small">Loading members...</p>
+          ) : teamMembers.length === 0 ? (
+            <p className="small" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No team members onboarded yet. Create one using the form.</p>
           ) : (
             <div className="table-wrap">
               <table>

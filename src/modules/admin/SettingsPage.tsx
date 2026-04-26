@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { PageHeader, Section } from '../../shared/ui/components'
 import { useSettings } from '../../hooks/useSettings'
+import { PhaseManager } from './PhaseManager'
 
 export function SettingsPage() {
   const { githubSettings, loading, error, updateGithubSettings } = useSettings()
@@ -13,14 +14,6 @@ export function SettingsPage() {
   useEffect(() => {
     setIsEnabled(githubSettings?.enabled ?? false)
   }, [githubSettings?.enabled])
-
-  if (loading) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>Loading settings...</p>
-      </div>
-    )
-  }
 
   if (error) {
     return (
@@ -133,7 +126,7 @@ export function SettingsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
             <button 
               type="submit" 
-              disabled={saveLoading}
+              disabled={saveLoading || loading}
               style={{
                 background: 'var(--brand-primary)',
                 color: 'white',
@@ -141,11 +134,11 @@ export function SettingsPage() {
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
                 fontWeight: '600',
-                cursor: saveLoading ? 'not-allowed' : 'pointer',
-                opacity: saveLoading ? 0.7 : 1,
+                cursor: (saveLoading || loading) ? 'not-allowed' : 'pointer',
+                opacity: (saveLoading || loading) ? 0.7 : 1,
               }}
             >
-              {saveLoading ? 'Saving...' : 'Save Settings'}
+              {loading ? 'Loading...' : saveLoading ? 'Saving...' : 'Save Settings'}
             </button>
             
             {saveSuccess && (
@@ -160,6 +153,8 @@ export function SettingsPage() {
           </div>
         </form>
       </Section>
+
+      <PhaseManager />
     </div>
   )
 }

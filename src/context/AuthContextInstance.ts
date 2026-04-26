@@ -3,7 +3,8 @@ import type { User } from '@supabase/supabase-js'
 
 export interface AuthContextValue {
   user: User | null
-  role: 'admin' | 'executive' | null
+  role: 'admin' | 'executive' | 'dev' | null
+  jobTitle: string | null
   loading: boolean
   signOut: () => Promise<void>
 }

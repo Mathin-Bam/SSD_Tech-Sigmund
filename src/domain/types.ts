@@ -21,7 +21,7 @@ export interface Phase {
   phaseId: string
   phaseName: string
   startDate: string
-  endDate: string
+  targetDate: string
   status: 'On Track' | 'Needs Attention' | 'Delayed' | 'Completed'
   owner: string
 }

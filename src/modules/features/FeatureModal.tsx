@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Feature, Subtask } from '../../domain/types'
+import { usePhases } from '../../hooks/usePhases'
+import { useTeamMembers } from '../../hooks/useTeamMembers'
 
 export interface FeatureModalProps {
   isOpen: boolean
@@ -10,16 +12,29 @@ export interface FeatureModalProps {
   onDelete?: (featureId: string) => Promise<void>
 }
 
+const toLocalDatetime = (iso?: string) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: FeatureModalProps) {
   const [featureName, setFeatureName] = useState('')
   const [moduleName, setModuleName] = useState('')
   const [priority, setPriority] = useState<Feature['priority']>('Medium')
+  const [assignedTo, setAssignedTo] = useState('')
   const [plannedDeadline, setPlannedDeadline] = useState('')
+  const [revisedDeadline, setRevisedDeadline] = useState('')
   const [progress, setProgress] = useState<number>(0)
   const [subtasks, setSubtasks] = useState<Subtask[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [phaseId, setPhaseId] = useState('')
 
+  const { phases } = usePhases()
+  const { teamMembers } = useTeamMembers()
   const isEditMode = !!feature
 
   useEffect(() => {
@@ -29,13 +44,14 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
       setFeatureName(feature?.featureName || '')
       setModuleName(feature?.moduleName || '')
       setPriority(feature?.priority || 'Medium')
+      setAssignedTo(feature?.assignedTo || '')
       setProgress(feature?.progress || 0)
       setSubtasks(feature?.subtasks || [])
       setNewTaskTitle('')
+      setPhaseId(feature?.phaseId || '')
       
-      // format date to YYYY-MM-DD for input type="date"
-      const dateVal = feature?.plannedDeadline ? feature.plannedDeadline.split('T')[0] : new Date().toISOString().split('T')[0]
-      setPlannedDeadline(dateVal)
+      setPlannedDeadline(toLocalDatetime(feature?.plannedDeadline))
+      setRevisedDeadline(toLocalDatetime(feature?.revisedDeadline))
     }
   }, [isOpen, feature?.featureId])
 
@@ -45,14 +61,19 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      // Race the save against a 10 second timeout so it can never hang forever
+      const selectedPhase = phases.find(p => p.phaseId === phaseId)
+      
       const savePromise = onSave({
         featureName: featureName.trim(),
         moduleName: moduleName.trim(),
         priority,
+        assignedTo: assignedTo.trim(),
         progress,
         subtasks,
-        plannedDeadline: new Date(plannedDeadline).toISOString()
+        phaseId: phaseId || undefined,
+        phaseName: selectedPhase?.phaseName || undefined,
+        plannedDeadline: plannedDeadline ? new Date(plannedDeadline).toISOString() : new Date().toISOString(),
+        revisedDeadline: revisedDeadline ? new Date(revisedDeadline).toISOString() : undefined
       })
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Save timed out. Check your connection.')), 10_000)
@@ -149,6 +170,30 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)' }}>
+              Phase
+              <select 
+                value={phaseId}
+                onChange={e => {
+                  const newPhaseId = e.target.value
+                  setPhaseId(newPhaseId)
+                  // Auto-fill deadline if not set
+                  if (!plannedDeadline) {
+                    const phase = phases.find(p => p.phaseId === newPhaseId)
+                    if (phase?.targetDate) {
+                      setPlannedDeadline(toLocalDatetime(phase.targetDate))
+                    }
+                  }
+                }}
+                style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border, rgba(255,255,255,0.1))', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              >
+                <option value="">-- Select Phase --</option>
+                {phases.map(p => (
+                  <option key={p.phaseId} value={p.phaseId}>{p.phaseName}</option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)' }}>
               Priority
               <select 
                 value={priority}
@@ -163,12 +208,38 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)' }}>
+              Assigned Developer
+              <select 
+                value={assignedTo}
+                onChange={e => setAssignedTo(e.target.value)}
+                style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border, rgba(255,255,255,0.1))', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              >
+                <option value="">-- Unassigned --</option>
+                {teamMembers.map((member) => (
+                  <option key={member.userId} value={member.name}>
+                    {member.name} ({member.role})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)' }}>
               Planned Deadline
               <input 
-                type="date"
+                type="datetime-local"
                 required
                 value={plannedDeadline}
                 onChange={e => setPlannedDeadline(e.target.value)}
+                style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border, rgba(255,255,255,0.1))', background: 'rgba(0,0,0,0.2)', color: 'white', colorScheme: 'dark' }}
+              />
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)' }}>
+              Revised Deadline
+              <input 
+                type="datetime-local"
+                value={revisedDeadline}
+                onChange={e => setRevisedDeadline(e.target.value)}
                 style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border, rgba(255,255,255,0.1))', background: 'rgba(0,0,0,0.2)', color: 'white', colorScheme: 'dark' }}
               />
             </label>

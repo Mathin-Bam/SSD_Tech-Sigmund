@@ -2,23 +2,24 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-type NavItem = { to: string; label: string; icon: string; adminOnly?: true }
+type AppRole = 'admin' | 'executive' | 'dev'
+type NavItem = { to: string; label: string; icon: string; roles?: AppRole[] }
 
 const allLinks: NavItem[] = [
-  { to: '/',          label: 'Overview',         icon: 'dashboard' },
-  { to: '/features',  label: 'Features',         icon: 'view_list' },
+  { to: '/',          label: 'Overview',         icon: 'dashboard',    roles: ['admin', 'executive'] },
+  { to: '/features',  label: 'Features',         icon: 'view_list',    roles: ['admin', 'dev'] },
   { to: '/timeline',  label: 'Timeline',         icon: 'timeline' },
   { to: '/team',      label: 'Team',             icon: 'group' },
-  { to: '/onboarding',label: 'Onboarding',       icon: 'person_add', adminOnly: true },
-  { to: '/risks',     label: 'Risks & Blockers', icon: 'warning' },
-  { to: '/uploads',   label: 'Uploads',          icon: 'upload_file', adminOnly: true },
-  { to: '/settings',  label: 'Settings',         icon: 'settings', adminOnly: true },
+  { to: '/onboarding',label: 'Onboarding',       icon: 'person_add',   roles: ['admin'] },
+  { to: '/risks',     label: 'Risks & Blockers', icon: 'warning',      roles: ['admin', 'dev'] },
+  { to: '/uploads',   label: 'Uploads',          icon: 'upload_file',  roles: ['admin'] },
+  { to: '/settings',  label: 'Settings',         icon: 'settings',     roles: ['admin'] },
 ]
 
-export function AppShell({ role }: { role: 'executive' | 'admin' }) {
-  const { user, signOut } = useAuth()
+export function AppShell({ role }: { role: AppRole }) {
+  const { user, signOut, jobTitle } = useAuth()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const links = allLinks.filter((link) => !link.adminOnly || role === 'admin')
+  const links = allLinks.filter((link) => !link.roles || link.roles.includes(role))
 
   const displayEmail = user?.email ?? ''
   const shortEmail = displayEmail.length > 22 ? displayEmail.slice(0, 20) + '…' : displayEmail
@@ -51,7 +52,7 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
 
         <nav className="sidebar-nav">
           <span className="sidebar-nav-label">
-            {role === 'executive' ? 'Client Portal' : 'Navigation'}
+            {role === 'executive' ? 'Client Portal' : role === 'dev' ? 'Developer' : 'Navigation'}
           </span>
           {links.map((link) => (
             <NavLink
@@ -87,14 +88,14 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: role === 'admin' ? 'rgba(227,24,55,0.2)' : 'rgba(59,130,246,0.2)',
+                background: role === 'admin' ? 'rgba(227,24,55,0.2)' : role === 'dev' ? 'rgba(34,197,94,0.2)' : 'rgba(59,130,246,0.2)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
                 fontFamily: 'Material Symbols Rounded',
                 fontSize: 16,
-                color: role === 'admin' ? '#e31837' : '#3b82f6',
+                color: role === 'admin' ? '#e31837' : role === 'dev' ? '#22c55e' : '#3b82f6',
                 fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24",
               }}
             >
@@ -131,7 +132,7 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
                   >
                     ADMIN
                   </span>
-                ) : (
+                ) : role === 'executive' ? (
                   <span
                     style={{
                       fontSize: 10,
@@ -145,6 +146,16 @@ export function AppShell({ role }: { role: 'executive' | 'admin' }) {
                     }}
                   >
                     EXEC
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 500,
+                      color: '#94a3b8',
+                    }}
+                  >
+                    {jobTitle || 'Developer'}
                   </span>
                 )}
               </div>

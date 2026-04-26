@@ -6,7 +6,7 @@ import type { AuthContextValue } from './AuthContextInstance'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [role, setRole] = useState<'admin' | 'executive' | null>(null)
+  const [role, setRole] = useState<'admin' | 'executive' | 'dev' | null>(null)
   const [loading, setLoading] = useState(true)
 
   async function fetchProfile(userId: string) {
@@ -21,9 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Error fetching profile:', error.message)
         setRole(null)
       } else if (data) {
-        // Explicitly cast to any first to bypass the 'never' inference if it's acting up, 
-        // or just use the correctly inferred type if possible.
-        setRole((data as { role: 'admin' | 'executive' }).role)
+        setRole((data as { role: 'admin' | 'executive' | 'dev' }).role)
       }
     } catch (err) {
       console.error('Unexpected error fetching profile:', err)
@@ -32,44 +30,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // 1. Initial Session Check
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) throw error
-        
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-        
-        if (currentUser) {
-          await fetchProfile(currentUser.id)
+    // Single source of truth for auth state.
+    // onAuthStateChange fires INITIAL_SESSION on every page load/refresh with
+    // the stored token — this replaces the old checkSession() pattern and
+    // eliminates the race condition where setLoading(false) fired from the
+    // listener before fetchProfile() had completed.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        try {
+          const currentUser = session?.user ?? null
+          setUser(currentUser)
+
+          if (
+            currentUser &&
+            (event === 'INITIAL_SESSION' ||
+              event === 'SIGNED_IN' ||
+              event === 'TOKEN_REFRESHED')
+          ) {
+            // Fetch the role for any event that means "a user is authenticated".
+            // INITIAL_SESSION covers page refresh with an existing session.
+            // TOKEN_REFRESHED covers the silent JWT refresh that happens every ~hour.
+            await fetchProfile(currentUser.id)
+          } else if (event === 'SIGNED_OUT' || !currentUser) {
+            setRole(null)
+          }
+        } catch (err) {
+          console.error('Error handling auth state change:', err)
+        } finally {
+          // loading is cleared exactly once per auth event, AFTER all async
+          // work (including fetchProfile) has completed.
+          setLoading(false)
         }
-      } catch (err) {
-        console.error('Failed to check session:', err)
-      } finally {
-        setLoading(false)
       }
-    }
-
-    checkSession()
-
-    // 2. Auth State Subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      try {
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-
-        if (event === 'SIGNED_IN' && currentUser) {
-          await fetchProfile(currentUser.id)
-        } else if (event === 'SIGNED_OUT') {
-          setRole(null)
-        }
-      } catch (err) {
-        console.error('Error handling auth state change:', err)
-      } finally {
-        setLoading(false)
-      }
-    })
+    )
 
     return () => {
       subscription.unsubscribe()
@@ -83,9 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const jobTitle: string | null = (user?.user_metadata as any)?.job_title ?? null
+
   const value: AuthContextValue = {
     user,
     role,
+    jobTitle,
     loading,
     signOut
   }

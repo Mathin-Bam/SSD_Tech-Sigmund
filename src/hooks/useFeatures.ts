@@ -81,6 +81,7 @@ function mapPatchToDb(patch: FeatureUpdateFields): any {
   if ('moduleName' in patch) dbPatch.module_name = patch.moduleName
   if ('priority' in patch) dbPatch.priority = patch.priority
   if ('plannedDeadline' in patch) dbPatch.planned_deadline = patch.plannedDeadline
+  if ('revisedDeadline' in patch) dbPatch.revised_deadline = patch.revisedDeadline
   if ('status' in patch) dbPatch.status = patch.status
   if ('progress' in patch) dbPatch.progress = patch.progress
   if ('internalNotes' in patch) dbPatch.internal_notes = patch.internalNotes

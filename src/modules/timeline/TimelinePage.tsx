@@ -3,6 +3,8 @@ import { daysUntilDeadline, deadlineAlerts } from '../../domain/rules'
 import { getInitials, formatDate } from '../../shared/utils/formatters'
 import type { Feature, Phase } from '../../domain/types'
 import { Badge } from '../../shared/ui/components'
+import { FeatureModal } from '../features/FeatureModal'
+import { FeatureStatusSheet } from '../features/FeatureStatusSheet'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -90,30 +92,56 @@ function StageDonut({ features }: { features: Feature[] }) {
 
 /** Inline horizontal progress rail with stage markers */
 function MilestoneProgressRail({ feature }: { feature: Feature }) {
-  const stageIdx = STAGE_ORDER.indexOf(feature.stage)
   const progress = feature.progress
+  const isCurrentPulse = feature.status === 'In Progress' || feature.status === 'Testing'
 
   return (
-    <div className="tl-rail-wrap">
-      <div className="tl-rail-bar">
+    <div className="tl-rail-wrap" style={{ position: 'relative', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+      <div 
+        className="tl-rail-bar" 
+        style={{ 
+          height: '12px', 
+          background: 'rgba(255,255,255,0.05)', 
+          backdropFilter: 'blur(8px)', 
+          borderRadius: '99px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
         <div
           className="tl-rail-fill"
           style={{
             width: `${progress}%`,
-            background: STATUS_COLOR[feature.onTrackStatus] ?? '#3b82f6',
+            height: '100%',
+            background: `linear-gradient(90deg, ${STATUS_COLOR[feature.onTrackStatus] ?? '#3b82f6'}cc, ${STATUS_COLOR[feature.onTrackStatus] ?? '#3b82f6'})`,
+            borderRadius: '99px',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            transition: 'width 0.4s ease'
           }}
-        />
+        >
+          {isCurrentPulse && progress > 0 && progress < 100 && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: '20px',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5))',
+              animation: 'pulse-glow 1.5s infinite alternate',
+              borderRadius: '0 99px 99px 0'
+            }} />
+          )}
+        </div>
       </div>
-      <div className="tl-rail-stages">
-        {STAGE_ORDER.map((s, i) => (
-          <div
-            key={s}
-            className={`tl-stage-marker${i <= stageIdx ? ' tl-stage-active' : ''}`}
-            style={i <= stageIdx ? { background: STAGE_COLOR[s], borderColor: STAGE_COLOR[s] } : undefined}
-            title={s}
-          />
-        ))}
-      </div>
+      <style>{`
+        @keyframes pulse-glow {
+          from { opacity: 0.2; box-shadow: 0 0 4px rgba(255,255,255,0.2); }
+          to { opacity: 1; box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -141,7 +169,6 @@ function MilestoneCard({ feature, expanded, onToggle }: {
       }}
       tabIndex={0}
       role="button"
-      aria-expanded={expanded}
       aria-label={`Milestone: ${feature.featureName}, ${feature.onTrackStatus}`}
     >
       {/* header row */}
@@ -174,12 +201,6 @@ function MilestoneCard({ feature, expanded, onToggle }: {
                 : 'warn'
             }
           />
-          <span
-            className="material-symbols-rounded tl-expand-icon"
-            style={{ transform: expanded ? 'rotate(180deg)' : undefined }}
-          >
-            expand_more
-          </span>
         </div>
       </div>
 
@@ -199,80 +220,6 @@ function MilestoneCard({ feature, expanded, onToggle }: {
           </span>
         </div>
       </div>
-
-      {/* expanded detail */}
-      {expanded && (
-        <div className="tl-mc-detail" onClick={(e) => e.stopPropagation()}>
-          <div className="tl-detail-grid">
-            <div className="tl-detail-cell">
-              <p className="tl-detail-label">Current Task</p>
-              <p className="tl-detail-val" style={{ color: '#22c55e', fontWeight: 600 }}>{feature.currentTask || '—'}</p>
-            </div>
-            <div className="tl-detail-cell">
-              <p className="tl-detail-label">Next Task</p>
-              <p className="tl-detail-val" style={{ color: '#3b82f6' }}>{feature.nextTask || '—'}</p>
-            </div>
-            <div className="tl-detail-cell">
-              <p className="tl-detail-label">Priority</p>
-              <p className="tl-detail-val">{feature.priority}</p>
-            </div>
-            <div className="tl-detail-cell">
-              <p className="tl-detail-label">Module</p>
-              <p className="tl-detail-val">{feature.moduleName}</p>
-            </div>
-          </div>
-
-          {/* Subtasks breakdown */}
-          {feature.subtasks && feature.subtasks.length > 0 && (
-            <div style={{ marginTop: '0.75rem' }}>
-              <p className="tl-detail-label" style={{ marginBottom: '0.5rem' }}>Task Checklist</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                {feature.subtasks.map((st) => (
-                  <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: st.completed ? 0.65 : 1 }}>
-                    <span
-                      className="material-symbols-rounded"
-                      style={{ fontSize: 15, color: st.completed ? '#22c55e' : 'rgba(255,255,255,0.25)', flexShrink: 0 }}
-                    >
-                      {st.completed ? 'check_circle' : 'radio_button_unchecked'}
-                    </span>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--text)', textDecoration: st.completed ? 'line-through' : 'none' }}>
-                      {st.title}
-                    </span>
-                    {!st.completed && feature.currentTask === st.title && (
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.12)', padding: '1px 6px', borderRadius: 4, marginLeft: 'auto' }}>CURRENT</span>
-                    )}
-                    {!st.completed && feature.nextTask === st.title && (
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.12)', padding: '1px 6px', borderRadius: 4, marginLeft: 'auto' }}>NEXT</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {feature.executiveSummary && (
-            <p className="tl-detail-summary">{feature.executiveSummary}</p>
-          )}
-          {feature.blockerNote && (
-            <div className="tl-blocker-note">
-              <span className="material-symbols-rounded" style={{ fontSize: 14, color: '#f59e0b' }}>warning</span>
-              <span>{feature.blockerNote}</span>
-            </div>
-          )}
-          {alerts.length > 0 && (
-            <div className="tl-alert-row">
-              {alerts.map((a) => (
-                <Badge key={a.type} label={a.label} tone={a.type === 'overdue' ? 'danger' : a.type === 'blocked' ? 'warn' : 'info'} />
-              ))}
-            </div>
-          )}
-          {((feature.dependencies || []).length > 0) && (
-            <p className="tl-dep-row">
-              <span className="material-symbols-rounded" style={{ fontSize: 13, verticalAlign: 'middle', color: 'var(--text-muted)' }}>link</span>
-              &nbsp;Dependencies: <em>{(feature.dependencies || []).join(', ')}</em>
-            </p>
-          )}
-        </div>
-      )}
     </div>
   )
 }
@@ -425,9 +372,23 @@ type FilterTab = 'All' | 'In Progress' | 'Completed' | 'Blocked' | 'At Risk'
 
 const FILTER_TABS: FilterTab[] = ['All', 'In Progress', 'Completed', 'Blocked', 'At Risk']
 
-export function TimelinePage({ features, phases }: { features: Feature[]; phases: Phase[] }) {
+export function TimelinePage({
+  features,
+  phases,
+  role = 'executive',
+  onUpdateFeature,
+  onDeleteFeature
+}: {
+  features: Feature[]
+  phases: Phase[]
+  role?: 'admin' | 'executive'
+  onUpdateFeature?: (id: string, patch: Partial<Feature>) => Promise<void>
+  onDeleteFeature?: (id: string) => Promise<void>
+}) {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [phaseFilter, setPhaseFilter] = useState<string>('All')
 
   const phaseNames = useMemo(() => Array.from(new Set(features.map((f) => f.phaseName))), [features])
@@ -444,18 +405,35 @@ export function TimelinePage({ features, phases }: { features: Feature[]; phases
     })
   }, [features, activeFilter, phaseFilter])
 
-  // Group by phase, sorted by deadline
+  // Group by explicit Phase registry
   const byPhase = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => a.plannedDeadline.localeCompare(b.plannedDeadline))
-    return sorted.reduce<Record<string, Feature[]>>((acc, f) => {
-      if (!acc[f.phaseName]) acc[f.phaseName] = []
-      acc[f.phaseName].push(f)
+    const grouped = phases.reduce<Record<string, Feature[]>>((acc, p) => {
+      acc[p.phaseId] = []
       return acc
     }, {})
-  }, [filtered])
+    grouped['_unassigned'] = []
 
-  function toggleExpand(id: string) {
-    setExpandedId((prev) => (prev === id ? null : id))
+    const sortedFeatures = [...filtered].sort((a, b) => a.plannedDeadline.localeCompare(b.plannedDeadline))
+    
+    sortedFeatures.forEach(f => {
+      // Find a matching phase in the registry (by ID or fallback to name)
+      const matchedPhase = phases.find(p => p.phaseId === f.phaseId || p.phaseName === f.phaseName)
+      if (matchedPhase && grouped[matchedPhase.phaseId]) {
+        grouped[matchedPhase.phaseId].push(f)
+      } else {
+        grouped['_unassigned'].push(f)
+      }
+    })
+    return grouped
+  }, [filtered, phases])
+
+  const handleFeatureClick = (feature: Feature) => {
+    setSelectedFeature(feature)
+    if (role === 'admin') {
+      setIsModalOpen(true)
+    } else {
+      setIsSheetOpen(true)
+    }
   }
 
   return (
@@ -480,6 +458,41 @@ export function TimelinePage({ features, phases }: { features: Feature[]; phases
             <option value="All">All Phases</option>
             {phaseNames.map((p) => <option key={p}>{p}</option>)}
           </select>
+        </div>
+      </div>
+
+      {/* ── Macro Phase Header ── */}
+      <div className="tl-macro-header" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-base)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="material-symbols-rounded" style={{ color: 'var(--brand-primary)' }}>rocket_launch</span>
+          Macro Phase Progress
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+          {phases.slice(0, 4).map(phase => {
+            const phaseFeatures = byPhase[phase.phaseId] || []
+            const phasePct = phaseFeatures.length > 0 
+              ? Math.round(phaseFeatures.reduce((acc, f) => acc + f.progress, 0) / phaseFeatures.length)
+              : 0
+
+            return (
+              <div key={phase.phaseId} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{phase.phaseName}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-base)' }}>{phasePct}%</span>
+                </div>
+                <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ 
+                      height: '100%', 
+                      width: `${phasePct}%`, 
+                      background: 'var(--brand-primary)',
+                      transition: 'width 0.4s ease'
+                    }} 
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -513,28 +526,32 @@ export function TimelinePage({ features, phases }: { features: Feature[]; phases
           </div>
 
           {/* Phase groups */}
-          {Object.keys(byPhase).length === 0 ? (
+          {phases.length === 0 && features.length === 0 ? (
             <div className="tl-empty">
               <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--text-faint)' }}>search_off</span>
               <p>No milestones match the current filter.</p>
             </div>
           ) : (
-            Object.entries(byPhase).map(([phaseName, items]) => {
-              const phase = phases.find((p) => p.phaseName === phaseName)
+            [...phases, { phaseId: '_unassigned', phaseName: 'Unassigned Features', status: 'On Track', startDate: '', targetDate: '', owner: '' }]
+              .filter(phase => phase.phaseId === '_unassigned' ? byPhase['_unassigned']?.length > 0 : true)
+              .map((phase) => {
+              const items = byPhase[phase.phaseId] || []
+              if (items.length === 0 && activeFilter !== 'All') return null
+
               const completedCount = items.filter((f) => f.status === 'Completed').length
               const phasePct = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
 
               return (
-                <div key={phaseName} className="tl-phase-group">
+                <div key={phase.phaseId} className="tl-phase-group">
                   <div className="tl-phase-header">
                     <div className="tl-phase-header-left">
                       <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--accent-blue)' }}>account_tree</span>
                       <div>
-                        <p className="tl-phase-name">{phaseName}</p>
-                        {phase && (
+                        <p className="tl-phase-name">{phase.phaseName}</p>
+                        {phase.phaseId !== '_unassigned' && (
                           <p className="tl-phase-dates">
-                            {formatDate(phase.startDate)}&nbsp;→&nbsp;{formatDate(phase.endDate)}
-                            &nbsp;·&nbsp;Owner: {phase.owner}
+                            {formatDate(phase.startDate)}&nbsp;→&nbsp;{formatDate(phase.targetDate)}
+                            &nbsp;·&nbsp;Owner: {phase.owner || 'Unassigned'}
                           </p>
                         )}
                       </div>
@@ -564,8 +581,8 @@ export function TimelinePage({ features, phases }: { features: Feature[]; phases
                       <MilestoneCard
                         key={f.featureId}
                         feature={f}
-                        expanded={expandedId === f.featureId}
-                        onToggle={() => toggleExpand(f.featureId)}
+                        expanded={false}
+                        onToggle={() => handleFeatureClick(f)}
                       />
                     ))}
                   </div>
@@ -578,6 +595,31 @@ export function TimelinePage({ features, phases }: { features: Feature[]; phases
         {/* Right sidebar */}
         <TimelineSidebar features={features} />
       </div>
+
+      {/* Modals & Sheets */}
+      <FeatureStatusSheet 
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        feature={selectedFeature}
+      />
+
+      {role === 'admin' && onUpdateFeature && onDeleteFeature && (
+        <FeatureModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          feature={selectedFeature}
+          onSave={async (patch) => {
+            if (selectedFeature) {
+              await onUpdateFeature(selectedFeature.featureId, patch)
+              setIsModalOpen(false)
+            }
+          }}
+          onDelete={async (id) => {
+            await onDeleteFeature(id)
+            setIsModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
