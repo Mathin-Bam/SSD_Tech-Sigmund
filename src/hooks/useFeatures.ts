@@ -56,6 +56,7 @@ function mapFeatureFromDb(row: any): Feature {
 // Map camelCase patch back to snake_case for DB update
 function mapPatchToDb(patch: FeatureUpdateFields): any {
   const dbPatch: any = {}
+  if ('status' in patch) dbPatch.status = patch.status
   if ('progress' in patch) dbPatch.progress = patch.progress
   if ('internalNotes' in patch) dbPatch.internal_notes = patch.internalNotes
   if ('githubPrUrl' in patch) dbPatch.github_pr_url = patch.githubPrUrl
