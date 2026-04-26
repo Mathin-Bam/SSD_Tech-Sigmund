@@ -3,7 +3,7 @@ import type { Feature } from '../../domain/types'
 import { Section } from '../../shared/ui/components'
 import { useTeamMembers } from '../../hooks/useTeamMembers'
 
-export type FeatureUpdateFields = Pick<
+export type FeatureUpdateFields = Partial<Pick<
   Feature,
   | 'status'
   | 'progress'
@@ -14,7 +14,7 @@ export type FeatureUpdateFields = Pick<
   | 'executiveSummary'
   | 'clientVisibility'
   | 'assignedTo'
->
+>>
 
 export function FeatureEditForm({
   feature,
