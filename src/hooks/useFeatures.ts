@@ -13,42 +13,60 @@ interface UseFeaturesReturn {
   refetch: () => Promise<void>
 }
 
-// Map snake_case DB columns back to camelCase domain types
+// Safe date parser — never throws, always returns a valid ISO string
+function safeIso(val: unknown, fallback = new Date().toISOString()): string {
+  if (!val) return fallback
+  try {
+    const d = new Date(val as string)
+    return isNaN(d.getTime()) ? fallback : d.toISOString()
+  } catch {
+    return fallback
+  }
+}
+
+// Valid enum guards
+const VALID_STATUSES = new Set(['Not Started','Planned','In Progress','In Review','Testing','Completed','Blocked','Delayed'])
+const VALID_STAGES   = new Set(['Design','Development','Testing','Deployment','Done'])
+const VALID_PRIORITIES = new Set(['Low','Medium','High','Critical'])
+const VALID_ON_TRACK = new Set(['On Track','Slight Risk','At Risk','Delayed','Completed'])
+
+// Map snake_case DB columns back to camelCase domain types — completely null-safe
 function mapFeatureFromDb(row: any): Feature {
+  const now = new Date().toISOString()
   return {
-    featureId: row.feature_id,
-    featureName: row.feature_name,
-    description: row.description ?? '',
-    phaseId: row.phase_id ?? '',
-    phaseName: row.phase_name ?? '',
-    moduleName: row.module_name ?? '',
-    priority: row.priority ?? 'Medium',
-    assignedTo: row.assigned_to ?? '',
-    owner: row.owner ?? '',
-    team: row.team ?? '',
-    stage: row.stage ?? 'Design',
-    status: row.status ?? 'Not Started',
-    progress: row.progress ?? 0,
-    startDate: row.start_date ?? '',
-    plannedDeadline: row.planned_deadline ?? '',
-    revisedDeadline: row.revised_deadline ?? undefined,
-    estimatedCompletionDate: row.estimated_completion_date ?? '',
-    onTrackStatus: row.on_track_status ?? 'On Track',
-    currentTask: row.current_task ?? '',
-    nextTask: row.next_task ?? '',
-    dependencies: row.dependencies ?? [],
-    blockerNote: row.blocker_note ?? '',
-    qaStatus: row.qa_status ?? 'Not Started',
-    designStatus: row.design_status ?? 'Not Started',
-    developmentStatus: row.development_status ?? 'Not Started',
-    lastUpdatedBy: row.last_updated_by ?? '',
-    lastUpdatedAt: row.last_updated_at ?? new Date().toISOString(),
-    clientVisibility: row.client_visibility ?? true,
-    executiveSummary: row.executive_summary ?? undefined,
-    mvpUrl: row.mvp_url ?? undefined,
-    srsRequirementId: row.srs_requirement_id ?? undefined,
-    githubPrUrl: row.github_pr_url ?? undefined,
-    internalNotes: row.internal_notes ?? undefined,
+    featureId:               String(row?.feature_id   ?? crypto.randomUUID()),
+    featureName:             String(row?.feature_name ?? 'Unnamed Feature'),
+    description:             String(row?.description  ?? ''),
+    phaseId:                 String(row?.phase_id     ?? ''),
+    phaseName:               String(row?.phase_name   ?? ''),
+    moduleName:              String(row?.module_name  ?? ''),
+    priority:                VALID_PRIORITIES.has(row?.priority) ? row.priority : 'Medium',
+    assignedTo:              String(row?.assigned_to  ?? ''),
+    owner:                   String(row?.owner        ?? ''),
+    team:                    String(row?.team         ?? ''),
+    stage:                   VALID_STAGES.has(row?.stage)   ? row.stage   : 'Design',
+    status:                  VALID_STATUSES.has(row?.status) ? row.status  : 'Not Started',
+    progress:                typeof row?.progress === 'number' ? row.progress : Number(row?.progress ?? 0),
+    startDate:               safeIso(row?.start_date,               now),
+    plannedDeadline:         safeIso(row?.planned_deadline,         now),
+    revisedDeadline:         row?.revised_deadline ? safeIso(row.revised_deadline) : undefined,
+    estimatedCompletionDate: safeIso(row?.estimated_completion_date, now),
+    onTrackStatus:           VALID_ON_TRACK.has(row?.on_track_status) ? row.on_track_status : 'On Track',
+    currentTask:             String(row?.current_task  ?? ''),
+    nextTask:                String(row?.next_task     ?? ''),
+    dependencies:            Array.isArray(row?.dependencies) ? row.dependencies : [],
+    blockerNote:             String(row?.blocker_note  ?? ''),
+    qaStatus:                String(row?.qa_status     ?? 'Not Started'),
+    designStatus:            String(row?.design_status ?? 'Not Started'),
+    developmentStatus:       String(row?.development_status ?? 'Not Started'),
+    lastUpdatedBy:           String(row?.last_updated_by ?? ''),
+    lastUpdatedAt:           safeIso(row?.last_updated_at, now),
+    clientVisibility:        row?.client_visibility !== false, // default true
+    executiveSummary:        row?.executive_summary ?? undefined,
+    mvpUrl:                  row?.mvp_url ?? undefined,
+    srsRequirementId:        row?.srs_requirement_id ?? undefined,
+    githubPrUrl:             row?.github_pr_url ?? undefined,
+    internalNotes:           row?.internal_notes ?? undefined,
   }
 }
 
@@ -82,28 +100,41 @@ export function useFeatures(): UseFeaturesReturn {
 
   const fetchFeatures = useCallback(async () => {
     try {
+      console.log('[useFeatures] Fetching features from Supabase...')
       const { data, error: fetchError } = await supabase
         .from('features')
         .select('*')
         .order('feature_id')
 
-      if (fetchError) throw fetchError
+      if (fetchError) {
+        console.error('[useFeatures] Supabase query error:', fetchError)
+        throw fetchError
+      }
 
-      const rows = (data as any[]) || []
-      const mapped =
-        rows.length === 0
-          ? []
-          : rows.map((row) => {
-              const feature = mapFeatureFromDb(row)
-              return { ...feature, onTrackStatus: onTrackClassifier(feature) }
-            })
+      const rows: any[] = Array.isArray(data) ? data : []
+      console.log(`[useFeatures] Raw rows received: ${rows.length}`)
+
+      const mapped: Feature[] = []
+      for (const row of rows) {
+        try {
+          const feature = mapFeatureFromDb(row)
+          mapped.push({ ...feature, onTrackStatus: onTrackClassifier(feature) })
+        } catch (rowErr: any) {
+          // Skip corrupted rows — log the offending row for debugging
+          console.error('[useFeatures] Skipping bad row (mapping failed):', rowErr.message, row)
+        }
+      }
+
+      console.log(`[useFeatures] Successfully mapped ${mapped.length} features`)
       setFeatures(mapped)
       setError(null)
     } catch (err: any) {
-      console.error('Error fetching features:', err.message)
-      setError(err.message)
+      const msg = err?.message ?? String(err)
+      console.error('[useFeatures] fetchFeatures failed:', msg)
+      setError(msg)
       setFeatures([])
     } finally {
+      // ALWAYS release the loading state — no matter what happened above
       setLoading(false)
     }
   }, [])
