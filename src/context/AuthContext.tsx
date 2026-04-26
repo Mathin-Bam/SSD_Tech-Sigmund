@@ -30,41 +30,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Single source of truth for auth state.
-    // onAuthStateChange fires INITIAL_SESSION on every page load/refresh with
-    // the stored token — this replaces the old checkSession() pattern and
-    // eliminates the race condition where setLoading(false) fired from the
-    // listener before fetchProfile() had completed.
+    let mounted = true
+
+    async function getInitialSession() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting initial session:', error.message)
+          if (mounted) setRole(null)
+          return
+        }
+
+        const currentUser = session?.user ?? null
+        if (mounted) {
+          setUser(currentUser)
+          if (currentUser) {
+            await fetchProfile(currentUser.id)
+          } else {
+            setRole(null)
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error during initial session check:', err)
+        if (mounted) setRole(null)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    getInitialSession()
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return
+        // We already handled the initial fetch via getInitialSession()
+        if (event === 'INITIAL_SESSION') return
+
         try {
           const currentUser = session?.user ?? null
           setUser(currentUser)
 
           if (
             currentUser &&
-            (event === 'INITIAL_SESSION' ||
-              event === 'SIGNED_IN' ||
-              event === 'TOKEN_REFRESHED')
+            (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')
           ) {
-            // Fetch the role for any event that means "a user is authenticated".
-            // INITIAL_SESSION covers page refresh with an existing session.
-            // TOKEN_REFRESHED covers the silent JWT refresh that happens every ~hour.
             await fetchProfile(currentUser.id)
           } else if (event === 'SIGNED_OUT' || !currentUser) {
             setRole(null)
           }
         } catch (err) {
           console.error('Error handling auth state change:', err)
-        } finally {
-          // loading is cleared exactly once per auth event, AFTER all async
-          // work (including fetchProfile) has completed.
-          setLoading(false)
         }
       }
     )
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
   }, [])
