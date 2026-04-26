@@ -15,6 +15,7 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
   const [moduleName, setModuleName] = useState('')
   const [priority, setPriority] = useState<Feature['priority']>('Medium')
   const [plannedDeadline, setPlannedDeadline] = useState('')
+  const [progress, setProgress] = useState<number>(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isEditMode = !!feature
@@ -24,6 +25,7 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
       setFeatureName(feature?.featureName || '')
       setModuleName(feature?.moduleName || '')
       setPriority(feature?.priority || 'Medium')
+      setProgress(feature?.progress || 0)
       
       // format date to YYYY-MM-DD for input type="date"
       const dateVal = feature?.plannedDeadline ? feature.plannedDeadline.split('T')[0] : new Date().toISOString().split('T')[0]
@@ -41,6 +43,7 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
         featureName: featureName.trim(),
         moduleName: moduleName.trim(),
         priority,
+        progress,
         plannedDeadline: new Date(plannedDeadline).toISOString()
       })
       onClose()
@@ -158,6 +161,22 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
               />
             </label>
           </div>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Progress</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', color: 'white' }}>{progress}%</span>
+            </div>
+            <input 
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={progress}
+              onChange={e => setProgress(Number(e.target.value))}
+              style={{ width: '100%', accentColor: 'var(--brand-primary, #3b82f6)', cursor: 'pointer' }}
+            />
+          </label>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border, rgba(255,255,255,0.1))' }}>
             {isEditMode ? (
