@@ -20,7 +20,7 @@ export function FeaturesPage({
   features: Feature[]
   teamMembers: TeamMember[]
   role: 'executive' | 'admin'
-  onUpdateFeature: (featureId: string, patch: Partial<Feature>) => void
+  onUpdateFeature: (featureId: string, patch: Partial<Feature>) => Promise<void>
   onCreateFeature: (newFeature: Partial<Feature>) => Promise<void>
   onDeleteFeature: (featureId: string) => Promise<void>
 }) {
@@ -63,9 +63,8 @@ export function FeaturesPage({
     }
   }
 
-  // Wrap to satisfy both sync and async call signatures
-  const handleUpdateFeature = async (featureId: string, patch: FeatureUpdateFields): Promise<void> => {
-    await Promise.resolve(onUpdateFeature(featureId, patch))
+  const handleUpdateFeature = async (featureId: string, patch: Partial<Feature>): Promise<void> => {
+    await onUpdateFeature(featureId, patch)
   }
 
   // ── View toggle button styles ──────────────────────────

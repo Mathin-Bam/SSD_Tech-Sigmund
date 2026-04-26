@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { Feature } from '../../domain/types'
+import type { Feature, Subtask } from '../../domain/types'
 
 export interface FeatureModalProps {
   isOpen: boolean
@@ -16,22 +16,28 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
   const [priority, setPriority] = useState<Feature['priority']>('Medium')
   const [plannedDeadline, setPlannedDeadline] = useState('')
   const [progress, setProgress] = useState<number>(0)
+  const [subtasks, setSubtasks] = useState<Subtask[]>([])
+  const [newTaskTitle, setNewTaskTitle] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isEditMode = !!feature
 
   useEffect(() => {
+    // Always reset submitting state when modal opens or closes
+    setIsSubmitting(false)
     if (isOpen) {
       setFeatureName(feature?.featureName || '')
       setModuleName(feature?.moduleName || '')
       setPriority(feature?.priority || 'Medium')
       setProgress(feature?.progress || 0)
+      setSubtasks(feature?.subtasks || [])
+      setNewTaskTitle('')
       
       // format date to YYYY-MM-DD for input type="date"
       const dateVal = feature?.plannedDeadline ? feature.plannedDeadline.split('T')[0] : new Date().toISOString().split('T')[0]
       setPlannedDeadline(dateVal)
     }
-  }, [isOpen, feature])
+  }, [isOpen, feature?.featureId])
 
   if (!isOpen) return null
 
@@ -39,17 +45,23 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await onSave({
+      // Race the save against a 10 second timeout so it can never hang forever
+      const savePromise = onSave({
         featureName: featureName.trim(),
         moduleName: moduleName.trim(),
         priority,
         progress,
+        subtasks,
         plannedDeadline: new Date(plannedDeadline).toISOString()
       })
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Save timed out. Check your connection.')), 10_000)
+      )
+      await Promise.race([savePromise, timeoutPromise])
       onClose()
-    } catch (err) {
-      console.error('Failed to save feature', err)
-      // Ideally show toast error
+    } catch (err: any) {
+      console.error('Failed to save feature:', err)
+      alert(`Save failed: ${err?.message ?? 'Unknown error'}. Please try again.`)
     } finally {
       setIsSubmitting(false)
     }
@@ -177,6 +189,81 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
               style={{ width: '100%', accentColor: 'var(--brand-primary, #3b82f6)', cursor: 'pointer' }}
             />
           </label>
+
+          {/* Subtasks Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)', margin: 0 }}>
+              Tasks Checklist
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {subtasks.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: 0, fontStyle: 'italic' }}>
+                  No tasks added yet.
+                </p>
+              ) : (
+                subtasks.map((st) => (
+                  <div key={st.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', opacity: st.completed ? 0.6 : 1 }}>
+                      <span className="material-symbols-rounded" style={{ fontSize: 18, color: st.completed ? '#22c55e' : 'var(--text-muted, #64748b)' }}>
+                        {st.completed ? 'check_circle' : 'radio_button_unchecked'}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text, #f8fafc)', textDecoration: st.completed ? 'line-through' : 'none' }}>
+                        {st.title}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setSubtasks(prev => prev.map(t => t.id === st.id ? { ...t, completed: !t.completed } : t)) }}
+                        style={{ background: 'transparent', border: 'none', color: st.completed ? 'var(--text-muted)' : '#22c55e', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: '0.2rem 0.5rem', borderRadius: '4px' }}
+                      >
+                        {st.completed ? 'Undo' : 'Complete'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setSubtasks(prev => prev.filter(t => t.id !== st.id)) }}
+                        style={{ background: 'transparent', border: 'none', color: '#e31837', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: '0.2rem 0.5rem', borderRadius: '4px' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+              <input 
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    if (newTaskTitle.trim()) {
+                      setSubtasks(prev => [...prev, { id: crypto.randomUUID(), title: newTaskTitle.trim(), completed: false }])
+                      setNewTaskTitle('')
+                    }
+                  }
+                }}
+                placeholder="Enter new task..."
+                style={{ flex: 1, padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border, rgba(255,255,255,0.1))', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '0.85rem' }}
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (newTaskTitle.trim()) {
+                    setSubtasks(prev => [...prev, { id: crypto.randomUUID(), title: newTaskTitle.trim(), completed: false }])
+                    setNewTaskTitle('')
+                  }
+                }}
+                style={{ background: 'var(--brand-primary, #3b82f6)', color: 'white', border: 'none', padding: '0 1rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border, rgba(255,255,255,0.1))' }}>
             {isEditMode ? (

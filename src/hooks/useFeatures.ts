@@ -57,6 +57,7 @@ function mapFeatureFromDb(row: any): Feature {
     onTrackStatus:           VALID_ON_TRACK.has(row?.on_track_status) ? row.on_track_status : 'On Track',
     currentTask:             String(row?.current_task  ?? ''),
     nextTask:                String(row?.next_task     ?? ''),
+    subtasks:                Array.isArray(row?.subtasks) ? row.subtasks : [],
     dependencies:            Array.isArray(row?.dependencies) ? row.dependencies : [],
     blockerNote:             String(row?.blocker_note  ?? ''),
     qaStatus:                String(row?.qa_status     ?? 'Not Started'),
@@ -89,6 +90,18 @@ function mapPatchToDb(patch: FeatureUpdateFields): any {
   if ('executiveSummary' in patch) dbPatch.executive_summary = patch.executiveSummary
   if ('clientVisibility' in patch) dbPatch.client_visibility = patch.clientVisibility
   if ('assignedTo' in patch) dbPatch.assigned_to = patch.assignedTo
+  
+  if ('subtasks' in patch && Array.isArray(patch.subtasks)) {
+    dbPatch.subtasks = patch.subtasks
+    // Auto-calculate current/next tasks from subtasks
+    const pending = patch.subtasks.filter(t => !t.completed)
+    dbPatch.current_task = pending.length > 0 ? pending[0].title : ''
+    dbPatch.next_task = pending.length > 1 ? pending[1].title : ''
+  } else {
+    if ('currentTask' in patch) dbPatch.current_task = patch.currentTask
+    if ('nextTask' in patch) dbPatch.next_task = patch.nextTask
+  }
+  
   return dbPatch
 }
 
@@ -180,12 +193,21 @@ export function useFeatures(): UseFeaturesReturn {
     // 1. Optimistic Update
     setFeatures(prev => prev.map(f => {
       if (f.featureId !== featureId) return f
-      const merged = { ...f, ...patch }
+      
+      let merged = { ...f, ...patch }
+      
+      // Auto-calculate current/next tasks for optimistic UI
+      if (patch.subtasks) {
+        const pending = patch.subtasks.filter(t => !t.completed)
+        merged.currentTask = pending.length > 0 ? pending[0].title : ''
+        merged.nextTask = pending.length > 1 ? pending[1].title : ''
+      }
+      
       return { ...merged, onTrackStatus: onTrackClassifier(merged) }
     }))
 
     try {
-      // 2. DB Update
+      // 2. DB Update — this is what we await
       const { error: updateError } = await (supabase
         .from('features') as any)
         .update(mapPatchToDb(patch))
@@ -193,24 +215,24 @@ export function useFeatures(): UseFeaturesReturn {
 
       if (updateError) throw updateError
 
-      // 3. Log the change
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { error: logError } = await (supabase.from('update_logs') as any).insert({
+      // 3. Audit log — fire-and-forget, never block the caller
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) return
+        ;(supabase.from('update_logs') as any).insert({
           feature_id: featureId,
           changed_by: user.id,
           change_type: 'manual',
           note: `Updated: ${Object.keys(patch).join(', ')}`
+        }).then(({ error: logError }: { error: any }) => {
+          if (logError) console.error(`Audit log failed for ${featureId}:`, logError.message)
         })
-        if (logError) {
-          console.error(`Audit log insert failed for feature ${featureId} with changes [${Object.keys(patch).join(', ')}]:`, logError.message)
-        }
-      }
+      })
     } catch (err: any) {
       console.error('Update failed:', err.message)
       setError(`Update failed: ${err.message}`)
-      // 4. Revert on failure
+      // 4. Revert optimistic update on failure
       setFeatures(originalFeatures)
+      throw err // let the caller (modal) handle the error too
     }
   }
 
@@ -239,6 +261,7 @@ export function useFeatures(): UseFeaturesReturn {
         on_track_status: f.onTrackStatus,
         current_task: f.currentTask,
         next_task: f.nextTask,
+        subtasks: f.subtasks,
         dependencies: f.dependencies,
         blocker_note: f.blockerNote,
         qa_status: f.qaStatus,
@@ -282,6 +305,7 @@ export function useFeatures(): UseFeaturesReturn {
         status: 'Not Started',
         stage: 'Design',
         progress: 0,
+        subtasks: [],
         start_date: now,
         last_updated_at: now
       }

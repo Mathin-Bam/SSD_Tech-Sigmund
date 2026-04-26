@@ -206,11 +206,11 @@ function MilestoneCard({ feature, expanded, onToggle }: {
           <div className="tl-detail-grid">
             <div className="tl-detail-cell">
               <p className="tl-detail-label">Current Task</p>
-              <p className="tl-detail-val">{feature.currentTask || '—'}</p>
+              <p className="tl-detail-val" style={{ color: '#22c55e', fontWeight: 600 }}>{feature.currentTask || '—'}</p>
             </div>
             <div className="tl-detail-cell">
               <p className="tl-detail-label">Next Task</p>
-              <p className="tl-detail-val">{feature.nextTask || '—'}</p>
+              <p className="tl-detail-val" style={{ color: '#3b82f6' }}>{feature.nextTask || '—'}</p>
             </div>
             <div className="tl-detail-cell">
               <p className="tl-detail-label">Priority</p>
@@ -221,6 +221,34 @@ function MilestoneCard({ feature, expanded, onToggle }: {
               <p className="tl-detail-val">{feature.moduleName}</p>
             </div>
           </div>
+
+          {/* Subtasks breakdown */}
+          {feature.subtasks && feature.subtasks.length > 0 && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <p className="tl-detail-label" style={{ marginBottom: '0.5rem' }}>Task Checklist</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                {feature.subtasks.map((st) => (
+                  <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: st.completed ? 0.65 : 1 }}>
+                    <span
+                      className="material-symbols-rounded"
+                      style={{ fontSize: 15, color: st.completed ? '#22c55e' : 'rgba(255,255,255,0.25)', flexShrink: 0 }}
+                    >
+                      {st.completed ? 'check_circle' : 'radio_button_unchecked'}
+                    </span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text)', textDecoration: st.completed ? 'line-through' : 'none' }}>
+                      {st.title}
+                    </span>
+                    {!st.completed && feature.currentTask === st.title && (
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.12)', padding: '1px 6px', borderRadius: 4, marginLeft: 'auto' }}>CURRENT</span>
+                    )}
+                    {!st.completed && feature.nextTask === st.title && (
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.12)', padding: '1px 6px', borderRadius: 4, marginLeft: 'auto' }}>NEXT</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {feature.executiveSummary && (
             <p className="tl-detail-summary">{feature.executiveSummary}</p>
           )}

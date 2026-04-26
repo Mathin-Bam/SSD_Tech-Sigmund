@@ -26,6 +26,12 @@ export interface Phase {
   owner: string
 }
 
+export interface Subtask {
+  id: string
+  title: string
+  completed: boolean
+}
+
 export interface Feature {
   featureId: string
   featureName: string
@@ -47,6 +53,7 @@ export interface Feature {
   onTrackStatus: OnTrackStatus
   currentTask: string
   nextTask: string
+  subtasks: Subtask[]
   dependencies: string[]
   blockerNote: string
   qaStatus: string

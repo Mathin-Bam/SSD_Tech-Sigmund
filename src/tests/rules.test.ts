@@ -31,6 +31,7 @@ const baseFeature: Feature = {
   lastUpdatedBy: 'Rahim',
   lastUpdatedAt: '2026-04-18',
   clientVisibility: true,
+  subtasks: [],
 }
 
 describe('rule engine', () => {
