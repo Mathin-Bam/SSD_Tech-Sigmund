@@ -5,6 +5,7 @@ import { useTeamMembers } from '../../hooks/useTeamMembers'
 
 export type FeatureUpdateFields = Pick<
   Feature,
+  | 'status'
   | 'progress'
   | 'internalNotes'
   | 'githubPrUrl'
