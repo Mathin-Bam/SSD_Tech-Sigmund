@@ -1,21 +1,33 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { TeamMember } from '../domain/types'
-import { teamMembers as seedTeamMembers } from '../domain/seed'
 
 interface UseTeamMembersReturn {
   teamMembers: TeamMember[]
   loading: boolean
   error: string | null
-  inviteMember: (email: string, fullName: string, role: string) => Promise<void>
+  inviteMember: (
+    email: string,
+    fullName: string,
+    portalRole: 'admin' | 'executive',
+    jobTitle: string,
+  ) => Promise<void>
   deactivateMember: (userId: string) => Promise<void>
   refetch: () => Promise<void>
+}
+
+function stableChannelSuffix(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `ch_${Math.random().toString(36).slice(2, 11)}`
 }
 
 export function useTeamMembers(): UseTeamMembersReturn {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const channelSuffixRef = useRef<string>(stableChannelSuffix())
 
   const fetchMembers = useCallback(async () => {
     try {
@@ -28,49 +40,64 @@ export function useTeamMembers(): UseTeamMembersReturn {
       if (fetchError) throw fetchError
 
       const rows = (data as any[]) || []
-      if (rows.length === 0) {
-        setTeamMembers(seedTeamMembers)
-      } else {
-        const mapped: TeamMember[] = rows.map(row => ({
-          userId: row.user_id,
-          name: row.full_name,
-          role: row.role,
-          department: row.department,
-          availability: row.availability,
-        }))
-        setTeamMembers(mapped)
-      }
+      const mapped: TeamMember[] =
+        rows.length === 0
+          ? []
+          : rows.map((row) => ({
+              userId: row.user_id,
+              name: row.full_name,
+              role: row.role,
+              department: row.department,
+              availability: row.availability,
+            }))
+      setTeamMembers(mapped)
       setError(null)
     } catch (err: any) {
       console.error('Error fetching team members:', err.message)
       setError(err.message)
-      setTeamMembers(seedTeamMembers)
+      setTeamMembers([])
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchMembers()
-    
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null
+        void fetchMembers()
+      }, 280)
+    }
+
+    void fetchMembers()
+
     const channel = supabase
-      .channel('team_members_realtime')
+      .channel(`team_members_realtime_${channelSuffixRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'team_members' },
-        () => fetchMembers()
+        debouncedRefetch,
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (debounceTimer) clearTimeout(debounceTimer)
+      void supabase.removeChannel(channel)
     }
   }, [fetchMembers])
 
-  const inviteMember = async (email: string, fullName: string, role: string) => {
+  const inviteMember = async (
+    email: string,
+    fullName: string,
+    portalRole: 'admin' | 'executive',
+    jobTitle: string,
+  ) => {
     try {
       const { data, error: inviteError } = await supabase.functions.invoke('invite-member', {
-        body: { email, fullName, role }
+        body: { email, fullName, portalRole, jobTitle },
       })
 
       if (inviteError) {

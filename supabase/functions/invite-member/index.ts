@@ -57,19 +57,31 @@ serve(async (req) => {
     }
 
     // ── 2. Parse & validate the request body ─────────────────────────────────
-    const { email, fullName, role } = await req.json();
+    const body = await req.json();
+    const { email, fullName, portalRole, jobTitle, role } = body as {
+      email?: string;
+      fullName?: string;
+      portalRole?: string;
+      jobTitle?: string;
+      role?: string;
+    };
 
-    if (!email || !fullName || !role) {
-      throw new Error('Missing required fields: email, fullName, role');
+    const portal = (portalRole ?? role)?.trim();
+    if (!email || !fullName || !portal) {
+      throw new Error('Missing required fields: email, fullName, portalRole (or legacy role)');
     }
 
-    if (!ALLOWED_ROLES.includes(role as AllowedRole)) {
+    if (!ALLOWED_ROLES.includes(portal as AllowedRole)) {
       return new Response(
-        JSON.stringify({ error: `Invalid role "${role}". Must be one of: ${ALLOWED_ROLES.join(', ')}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify({
+          error: `Invalid portal role "${portal}". Must be one of: ${ALLOWED_ROLES.join(', ')}`,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
       );
     }
-    const validatedRole = role as AllowedRole;
+    const validatedPortal = portal as AllowedRole;
+    const teamMemberRole =
+      typeof jobTitle === 'string' && jobTitle.trim().length > 0 ? jobTitle.trim() : 'Team Member';
 
     // ── 3. Privileged operations via service-role client ─────────────────────
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -83,10 +95,10 @@ serve(async (req) => {
 
     const userId = authData.user.id;
 
-    // ── 4. Update profile role (using validatedRole, not a hardcoded value) ──
+    // ── 4. Update profile role (dashboard access: admin | executive) ─────────
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ role: validatedRole })
+      .update({ role: validatedPortal })
       .eq('id', userId);
 
     if (profileError) {
@@ -102,7 +114,7 @@ serve(async (req) => {
         {
           user_id: userId,
           full_name: fullName,
-          role: validatedRole,
+          role: teamMemberRole,
           department: 'Engineering',
           availability: 'Available',
           active: true,

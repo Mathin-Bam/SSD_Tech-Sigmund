@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { deadlineAlerts } from '../../domain/rules'
-import type { Feature } from '../../domain/types'
+import type { Feature, TeamMember } from '../../domain/types'
 import { Badge, ExternalLinkButton, Section } from '../../shared/ui/components'
 import { useUpdateLogs } from '../../hooks/useUpdateLogs'
 import { FeatureEditForm, type FeatureUpdateFields } from './FeatureEditForm'
 
 export function FeaturesPage({
   features,
+  teamMembers,
   role,
   onUpdateFeature,
 }: {
   features: Feature[]
+  teamMembers: TeamMember[]
   role: 'executive' | 'admin'
   onUpdateFeature: (featureId: string, patch: FeatureUpdateFields) => void
 }) {
@@ -314,6 +316,7 @@ export function FeaturesPage({
         open={editOpen && role === 'admin'}
         onClose={() => setEditOpen(false)}
         onSave={onUpdateFeature}
+        teamMembers={teamMembers}
       />
     </div>
   )

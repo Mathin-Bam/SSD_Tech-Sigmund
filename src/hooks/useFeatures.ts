@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Feature } from '../domain/types'
 import { onTrackClassifier } from '../domain/rules'
-import { features as seedFeatures } from '../domain/seed'
 import type { FeatureUpdateFields } from '../modules/features/FeatureEditForm'
 
 interface UseFeaturesReturn {
@@ -67,10 +66,18 @@ function mapPatchToDb(patch: FeatureUpdateFields): any {
   return dbPatch
 }
 
+function stableChannelSuffix(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `ch_${Math.random().toString(36).slice(2, 11)}`
+}
+
 export function useFeatures(): UseFeaturesReturn {
   const [features, setFeatures] = useState<Feature[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const channelSuffixRef = useRef<string>(stableChannelSuffix())
 
   const fetchFeatures = useCallback(async () => {
     try {
@@ -82,41 +89,49 @@ export function useFeatures(): UseFeaturesReturn {
       if (fetchError) throw fetchError
 
       const rows = (data as any[]) || []
-      if (rows.length === 0) {
-        // Fallback to seed data if DB is empty
-        setFeatures(seedFeatures)
-      } else {
-        const mapped = rows.map(row => {
-          const feature = mapFeatureFromDb(row)
-          return { ...feature, onTrackStatus: onTrackClassifier(feature) }
-        })
-        setFeatures(mapped)
-      }
+      const mapped =
+        rows.length === 0
+          ? []
+          : rows.map((row) => {
+              const feature = mapFeatureFromDb(row)
+              return { ...feature, onTrackStatus: onTrackClassifier(feature) }
+            })
+      setFeatures(mapped)
       setError(null)
     } catch (err: any) {
       console.error('Error fetching features:', err.message)
       setError(err.message)
-      setFeatures(seedFeatures) // Fallback on error
+      setFeatures([])
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchFeatures()
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-    // Realtime subscription
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null
+        void fetchFeatures()
+      }, 280)
+    }
+
+    void fetchFeatures()
+
     const channel = supabase
-      .channel('features_realtime')
+      .channel(`features_realtime_${channelSuffixRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'features' },
-        () => fetchFeatures()
+        debouncedRefetch,
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (debounceTimer) clearTimeout(debounceTimer)
+      void supabase.removeChannel(channel)
     }
   }, [fetchFeatures])
 

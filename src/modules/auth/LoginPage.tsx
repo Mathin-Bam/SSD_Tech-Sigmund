@@ -339,8 +339,9 @@ const styles = `
 `
 
 const PROJECT_NAMES: Record<string, string> = {
+  default: 'Project workspace',
   'ssd-tech-tracker': 'SSD-Tech Project Tracker',
-  'acp-hospital': 'ACP-Hospital Management System',
+  'acp-hospital': 'ACP Hospital Management System & Infrastructure',
 }
 
 interface LoginPageProps {
@@ -389,7 +390,7 @@ export function LoginPage({ projectId, onBack }: LoginPageProps) {
             </div>
             <div className="login-project-badge">
               <span className="material-symbols-rounded">folder</span>
-              {PROJECT_NAMES[projectId] ?? projectId}
+              {PROJECT_NAMES[projectId] ?? 'Project workspace'}
             </div>
           </div>
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Feature } from '../../domain/types'
+import type { Feature, TeamMember } from '../../domain/types'
 import { Section } from '../../shared/ui/components'
-import { useTeamMembers } from '../../hooks/useTeamMembers'
 
 export type FeatureUpdateFields = Pick<
   Feature,
@@ -20,13 +19,14 @@ export function FeatureEditForm({
   open,
   onClose,
   onSave,
+  teamMembers,
 }: {
   feature: Feature | null
   open: boolean
   onClose: () => void
   onSave: (featureId: string, patch: FeatureUpdateFields) => void
+  teamMembers: TeamMember[]
 }) {
-  const { teamMembers } = useTeamMembers()
   const [progress, setProgress] = useState(0)
   const [internalNotes, setInternalNotes] = useState('')
   const [githubPrUrl, setGithubPrUrl] = useState('')
@@ -36,8 +36,10 @@ export function FeatureEditForm({
   const [clientVisibility, setClientVisibility] = useState(true)
   const [assignedTo, setAssignedTo] = useState('')
 
+  // Sync form only when opening the modal or switching rows — not on every parent
+  // `feature` object identity change (Realtime refetches would otherwise reset the form endlessly).
   useEffect(() => {
-    if (!feature) return
+    if (!open || !feature) return
     setProgress(feature.progress)
     setInternalNotes(feature.internalNotes ?? '')
     setGithubPrUrl(feature.githubPrUrl ?? '')
@@ -46,7 +48,8 @@ export function FeatureEditForm({
     setExecutiveSummary(feature.executiveSummary ?? '')
     setClientVisibility(feature.clientVisibility)
     setAssignedTo(feature.assignedTo ?? '')
-  }, [feature])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally avoid `feature` reference churn from Realtime
+  }, [open, feature?.featureId])
 
   if (!open || !feature) return null
 
@@ -87,8 +90,8 @@ export function FeatureEditForm({
               Assigned Developer
               <select id="edit-assignee" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
                 <option value="">-- Unassigned --</option>
-                {teamMembers.map(member => (
-                  <option key={member.userId} value={member.userId}>
+                {teamMembers.map((member) => (
+                  <option key={member.userId} value={member.name}>
                     {member.name} ({member.role})
                   </option>
                 ))}

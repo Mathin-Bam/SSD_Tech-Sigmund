@@ -1,6 +1,43 @@
 import { deadlineAlerts } from './rules'
 import type { Feature, OnTrackStatus, Phase } from './types'
 
+/** Build phase rows from feature data only (no hardcoded phases). */
+export function derivePhasesFromFeatures(features: Feature[]): Phase[] {
+  const byPhase = new Map<string, Feature[]>()
+  for (const f of features) {
+    const id = (f.phaseId || '').trim() || '_ungrouped'
+    if (!byPhase.has(id)) byPhase.set(id, [])
+    byPhase.get(id)!.push(f)
+  }
+
+  const rollupStatus = (group: Feature[]): Phase['status'] => {
+    if (group.length === 0) return 'On Track'
+    if (group.every((g) => g.status === 'Completed')) return 'Completed'
+    if (group.some((g) => g.onTrackStatus === 'Delayed' || g.status === 'Delayed')) return 'Delayed'
+    if (group.some((g) => ['At Risk', 'Slight Risk'].includes(g.onTrackStatus))) return 'Needs Attention'
+    return 'On Track'
+  }
+
+  return [...byPhase.entries()]
+    .map(([phaseId, group]) => {
+      const phaseName = group[0]?.phaseName?.trim() || phaseId
+      const dateStrings = group.flatMap((g) => [g.startDate, g.plannedDeadline, g.estimatedCompletionDate].filter(Boolean))
+      const sorted = [...dateStrings].sort()
+      const startDate = sorted[0] ?? ''
+      const endDate = sorted.length > 0 ? sorted[sorted.length - 1]! : startDate
+      const owner = group[0]?.owner?.trim() || '—'
+      return {
+        phaseId,
+        phaseName,
+        startDate: startDate || new Date().toISOString().slice(0, 10),
+        endDate: endDate || startDate || new Date().toISOString().slice(0, 10),
+        status: rollupStatus(group),
+        owner,
+      }
+    })
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))
+}
+
 export interface SummaryMetrics {
   totalPhases: number
   activePhase: string

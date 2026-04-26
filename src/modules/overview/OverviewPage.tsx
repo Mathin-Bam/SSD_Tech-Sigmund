@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { computeSummaryMetrics, phaseHealth } from '../../domain/selectors'
 import type { Feature, Phase } from '../../domain/types'
 import { Badge, ExternalLinkButton, MetricCard, ProgressRing, Section } from '../../shared/ui/components'
@@ -38,6 +39,29 @@ export function OverviewPage({
         }
       `}</style>
       <div className="page">
+      {features.length === 0 && role === 'admin' && (
+        <div
+          className="section"
+          style={{
+            marginBottom: '1.25rem',
+            padding: '1rem 1.25rem',
+            background: 'rgba(227,24,55,0.08)',
+            border: '1px solid rgba(227,24,55,0.25)',
+            borderRadius: 10,
+            fontSize: '0.9rem',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <strong style={{ color: 'var(--text)' }}>No features in the database yet.</strong>{' '}
+          Use <Link to="/uploads" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Uploads</Link> to import a CSV
+          or add rows in Supabase. Phases and metrics are derived from your feature data.
+        </div>
+      )}
+      {features.length === 0 && role === 'executive' && (
+        <p className="small" style={{ marginBottom: '1.25rem', opacity: 0.85 }}>
+          No feature data is available yet. Your delivery team will populate progress here.
+        </p>
+      )}
       {/* ── Page Header ── */}
       <div className="page-header">
         <div className="page-header-text">

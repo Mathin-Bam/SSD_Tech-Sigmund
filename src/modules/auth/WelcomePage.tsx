@@ -363,30 +363,27 @@ interface Project {
   status: 'active' | 'soon' | 'planned'
   icon: string
   iconColor: 'red' | 'blue' | 'purple'
-  features: number
-  team: number
 }
 
+/** Project pickers only set the login label — all metrics and lists come from your database after sign-in (empty until admin uploads or inserts data). */
 const PROJECTS: Project[] = [
   {
     id: 'ssd-tech-tracker',
     name: 'SSD-Tech Project Tracker',
-    description: 'Full project lifecycle management — features, milestones, risks, and team tracking.',
+    description:
+      'Lifecycle tracking for SSD-Tech deliveries. Dashboards stay empty until an admin loads features and team data; then Overview, Timeline, and Features stay in sync.',
     status: 'active',
     icon: 'analytics',
     iconColor: 'red',
-    features: 24,
-    team: 6,
   },
   {
     id: 'acp-hospital',
-    name: 'ACP-Hospital Management System & Infrastructure',
-    description: 'End-to-end HMS platform covering patient records, billing, staff management and hospital infrastructure.',
+    name: 'ACP Hospital Management System & Infrastructure',
+    description:
+      'End-to-end HMS program — patient records, billing, staff, and infrastructure. Starts with no rows: use Uploads and onboarding so every field and chart reflects your inserted data.',
     status: 'active',
     icon: 'local_hospital',
     iconColor: 'blue',
-    features: 41,
-    team: 9,
   },
 ]
 
@@ -444,7 +441,7 @@ export function WelcomePage({ onProjectSelect }: WelcomePageProps) {
           </div>
 
           {/* Section label */}
-          <div className="welcome-section-label">Select a Project to Continue</div>
+          <div className="welcome-section-label">Select a project to continue</div>
 
           {/* Project cards */}
           <div className="welcome-projects">
@@ -476,17 +473,6 @@ export function WelcomePage({ onProjectSelect }: WelcomePageProps) {
 
                 <h3 className="project-name">{project.name}</h3>
                 <p className="project-desc">{project.description}</p>
-
-                <div className="project-meta">
-                  <div className="project-meta-item">
-                    <span className="material-symbols-rounded">task_alt</span>
-                    {project.features} features
-                  </div>
-                  <div className="project-meta-item">
-                    <span className="material-symbols-rounded">group</span>
-                    {project.team} members
-                  </div>
-                </div>
 
                 <div className="project-card-arrow">
                   <span className="material-symbols-rounded">arrow_forward</span>

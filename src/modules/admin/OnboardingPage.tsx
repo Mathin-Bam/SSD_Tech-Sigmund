@@ -6,11 +6,12 @@ export function OnboardingPage() {
   const { teamMembers, loading, inviteMember, deactivateMember } = useTeamMembers()
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('Fullstack Developer')
+  const [portalRole, setPortalRole] = useState<'admin' | 'executive'>('executive')
+  const [jobTitle, setJobTitle] = useState('Fullstack Developer')
   const [inviting, setInviting] = useState(false)
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
-  const roles = [
+  const jobTitles = [
     'Backend Developer',
     'Frontend Developer',
     'Fullstack Developer',
@@ -23,7 +24,7 @@ export function OnboardingPage() {
     setInviting(true)
     setMsg(null)
     try {
-      await inviteMember(email, fullName, role)
+      await inviteMember(email, fullName, portalRole, jobTitle)
       setMsg({ text: `Invite sent to ${email}`, type: 'success' })
       setEmail('')
       setFullName('')
@@ -92,9 +93,24 @@ export function OnboardingPage() {
               />
             </label>
             <label>
-              Role
-              <select value={role} onChange={e => setRole(e.target.value)}>
-                {roles.map(r => <option key={r} value={r}>{r}</option>)}
+              Dashboard access
+              <select
+                value={portalRole}
+                onChange={(e) => setPortalRole(e.target.value as 'admin' | 'executive')}
+                aria-label="Portal role for sign-in"
+              >
+                <option value="executive">Executive (client portal)</option>
+                <option value="admin">Admin (full access)</option>
+              </select>
+            </label>
+            <label>
+              Job title (roster)
+              <select value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} aria-label="Job title on team roster">
+                {jobTitles.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </label>
 

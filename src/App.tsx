@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './app/AppShell'
-import { phases } from './domain/seed'
+import { derivePhasesFromFeatures } from './domain/selectors'
 import { useAuth } from './hooks/useAuth'
 import { useFeatures } from './hooks/useFeatures'
 import { useTeamMembers } from './hooks/useTeamMembers'
@@ -36,6 +36,7 @@ function Dashboard() {
   // Live Supabase Hooks
   const { features, updateFeature, bulkUpsertFeatures } = useFeatures()
   const { teamMembers } = useTeamMembers()
+  const phases = useMemo(() => derivePhasesFromFeatures(features), [features])
 
   return (
     <Routes>
@@ -44,7 +45,14 @@ function Dashboard() {
           <Route path="/" element={<OverviewPage features={features} phases={phases} role={role} />} />
           <Route
             path="/features"
-            element={<FeaturesPage features={features} role={role} onUpdateFeature={updateFeature} />}
+            element={
+              <FeaturesPage
+                features={features}
+                teamMembers={teamMembers}
+                role={role}
+                onUpdateFeature={updateFeature}
+              />
+            }
           />
           <Route path="/timeline" element={<TimelinePage features={features} phases={phases} />} />
           <Route path="/team" element={<TeamPage features={features} teamMembers={teamMembers} />} />

@@ -17,19 +17,19 @@ function isFeatureLike(value: unknown): value is Feature {
   )
 }
 
-/** Parse persisted JSON; re-run on-track classification; fall back to seed. */
-export function loadFeaturesFromStorage(raw: string | null, seed: Feature[]): Feature[] {
-  if (!raw) return seed
+/** Parse persisted JSON; re-run on-track classification; fall back to `fallback` (default empty). */
+export function loadFeaturesFromStorage(raw: string | null, fallback: Feature[] = []): Feature[] {
+  if (!raw) return fallback
   try {
     const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed) || parsed.length === 0) return seed
+    if (!Array.isArray(parsed) || parsed.length === 0) return fallback
     const valid = parsed.filter(isFeatureLike)
-    if (valid.length === 0) return seed
+    if (valid.length === 0) return fallback
     return valid.map((f) => {
       const merged: Feature = { ...f }
       return { ...merged, onTrackStatus: onTrackClassifier(merged) }
     })
   } catch {
-    return seed
+    return fallback
   }
 }

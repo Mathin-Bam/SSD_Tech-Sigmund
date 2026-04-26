@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { derivePhasesFromFeatures } from '../domain/selectors'
 import { deadlineAlerts, onTrackClassifier, progressBandFromStage } from '../domain/rules'
 import type { Feature } from '../domain/types'
 
@@ -60,5 +61,18 @@ describe('rule engine', () => {
       new Date('2026-04-24'),
     )
     expect(alerts.map((a) => a.type)).toContain('stale')
+  })
+
+  it('derivePhasesFromFeatures groups by phaseId', () => {
+    const phases = derivePhasesFromFeatures([
+      baseFeature,
+      { ...baseFeature, featureId: 'F-2', phaseId: 'P2', phaseName: 'Phase 2', startDate: '2026-05-01', plannedDeadline: '2026-05-30' },
+    ])
+    expect(phases).toHaveLength(2)
+    expect(phases.map((p) => p.phaseId).sort()).toEqual(['P1', 'P2'])
+  })
+
+  it('derivePhasesFromFeatures returns empty for no features', () => {
+    expect(derivePhasesFromFeatures([])).toEqual([])
   })
 })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 
@@ -26,14 +26,23 @@ interface UpdateLogRow {
   profiles: { full_name: string } | null
 }
 
+function stableChannelSuffix(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `ch_${Math.random().toString(36).slice(2, 11)}`
+}
+
 export function useUpdateLogs(featureId: string | null): UseUpdateLogsReturn {
   const [logs, setLogs] = useState<UpdateLog[]>([])
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
+  const channelSuffixRef = useRef<string>(stableChannelSuffix())
 
   const fetchLogs = useCallback(async () => {
     if (!featureId) {
       setLogs([])
+      setLoading(false)
       return
     }
 
@@ -72,26 +81,41 @@ export function useUpdateLogs(featureId: string | null): UseUpdateLogsReturn {
   }, [featureId])
 
   useEffect(() => {
-    fetchLogs()
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-    if (!featureId) return
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null
+        void fetchLogs()
+      }, 200)
+    }
+
+    void fetchLogs()
+
+    if (!featureId) {
+      return () => {
+        if (debounceTimer) clearTimeout(debounceTimer)
+      }
+    }
 
     const channel = supabase
-      .channel(`logs_${featureId}`)
+      .channel(`update_logs_${featureId}_${channelSuffixRef.current}`)
       .on(
         'postgres_changes',
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
+        {
+          event: 'INSERT',
+          schema: 'public',
           table: 'update_logs',
-          filter: `feature_id=eq.${featureId}`
+          filter: `feature_id=eq.${featureId}`,
         },
-        () => fetchLogs()
+        debouncedRefetch,
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (debounceTimer) clearTimeout(debounceTimer)
+      void supabase.removeChannel(channel)
     }
   }, [fetchLogs, featureId])
 
