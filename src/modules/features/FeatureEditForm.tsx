@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import type { Feature, TeamMember } from '../../domain/types'
 import { Section } from '../../shared/ui/components'
 
-export type FeatureUpdateFields = Pick<
+export type FeatureUpdateFields = Partial<Pick<
   Feature,
+  | 'status'
   | 'progress'
   | 'internalNotes'
   | 'githubPrUrl'
@@ -12,7 +13,7 @@ export type FeatureUpdateFields = Pick<
   | 'executiveSummary'
   | 'clientVisibility'
   | 'assignedTo'
->
+>>
 
 export function FeatureEditForm({
   feature,
