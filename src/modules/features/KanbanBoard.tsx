@@ -11,6 +11,7 @@ import {
   type UniqueIdentifier,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { type CSSProperties, useState } from 'react'
 import type { Feature } from '../../domain/types'
 import type { FeatureUpdateFields } from './FeatureEditForm'
@@ -164,7 +165,7 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick }: KanbanBo
       </div>
 
       {/* Floating drag overlay — renders a ghost of the card at cursor */}
-      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }} modifiers={[snapCenterToCursor]}>
         {activeFeature ? (
           <div style={{ width: 220, transform: 'rotate(2deg)', opacity: 0.95 }}>
             <KanbanCardOverlay feature={activeFeature} />
