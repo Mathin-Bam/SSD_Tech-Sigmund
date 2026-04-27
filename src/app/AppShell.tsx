@@ -11,7 +11,7 @@ const allLinks: NavItem[] = [
   { to: '/timeline',  label: 'Timeline',         icon: 'timeline' },
   { to: '/team',      label: 'Team',             icon: 'group' },
   { to: '/onboarding',label: 'Onboarding',       icon: 'person_add',   roles: ['admin'] },
-  { to: '/risks',     label: 'Risks & Blockers', icon: 'warning',      roles: ['admin', 'dev'] },
+  { to: '/risks',     label: 'Risks & Blockers', icon: 'warning',      roles: ['admin', 'dev', 'executive'] },
   { to: '/uploads',   label: 'Uploads',          icon: 'upload_file',  roles: ['admin'] },
   { to: '/settings',  label: 'Settings',         icon: 'settings',     roles: ['admin'] },
 ]

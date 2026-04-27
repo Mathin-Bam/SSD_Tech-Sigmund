@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { CSSProperties } from 'react'
-import type { Feature } from '../../domain/types'
+import type { Feature, Blocker } from '../../domain/types'
 
 // ── Priority colour map ───────────────────────────────────
 type PriorityColor = { bg: string; text: string; dot: string }
@@ -14,12 +14,12 @@ const PRIORITY_COLORS: Record<Feature['priority'], PriorityColor> = {
 }
 
 // ── Overlay variant (rendered inside DragOverlay) ─────────
-export function KanbanCardOverlay({ feature }: { feature: Feature }) {
-  return <KanbanCardInner feature={feature} isDragging />
+export function KanbanCardOverlay({ feature, blockers }: { feature: Feature; blockers?: Blocker[] }) {
+  return <KanbanCardInner feature={feature} isDragging blockers={blockers} />
 }
 
 // ── Sortable wrapper ──────────────────────────────────────
-export function KanbanCard({ feature, onClick }: { feature: Feature; onClick?: (f: Feature) => void }) {
+export function KanbanCard({ feature, onClick, blockers }: { feature: Feature; onClick?: (f: Feature) => void; blockers?: Blocker[] }) {
   const {
     attributes,
     listeners,
@@ -38,7 +38,7 @@ export function KanbanCard({ feature, onClick }: { feature: Feature; onClick?: (
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => onClick?.(feature)}>
-      <KanbanCardInner feature={feature} />
+      <KanbanCardInner feature={feature} blockers={blockers} />
     </div>
   )
 }
@@ -47,16 +47,21 @@ export function KanbanCard({ feature, onClick }: { feature: Feature; onClick?: (
 function KanbanCardInner({
   feature,
   isDragging = false,
+  blockers = [],
 }: {
   feature: Feature
   isDragging?: boolean
+  blockers?: Blocker[]
 }) {
   const pc = PRIORITY_COLORS[feature.priority]
   const clampedProgress = Math.min(100, Math.max(0, feature.progress))
+  
+  const activeBlockers = blockers.filter((b) => b.featureId === feature.featureId && b.status !== 'Resolved')
+  const hasBlocker = activeBlockers.length > 0 || !!feature.blockerNote
 
   const cardStyle: CSSProperties = {
     background: 'var(--bg-surface)',
-    border: '1px solid var(--border)',
+    border: `1px solid ${hasBlocker ? '#e31837' : 'var(--border)'}`,
     borderRadius: 'var(--radius-lg)' as string,
     padding: '0.85rem 1rem',
     cursor: 'grab',
@@ -142,34 +147,46 @@ function KanbanCardInner({
         }}
       >
         {/* Priority badge */}
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.3rem',
-            padding: '0.18rem 0.5rem',
-            borderRadius: 999,
-            fontSize: '0.66rem',
-            fontWeight: 700,
-            background: pc.bg,
-            color: pc.text,
-            letterSpacing: '0.03em',
-            textTransform: 'uppercase',
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <span
-            aria-hidden="true"
             style={{
-              width: 5,
-              height: 5,
-              borderRadius: '50%',
-              background: pc.dot,
-              display: 'inline-block',
-              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              padding: '0.18rem 0.5rem',
+              borderRadius: 999,
+              fontSize: '0.66rem',
+              fontWeight: 700,
+              background: pc.bg,
+              color: pc.text,
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
             }}
-          />
-          {feature.priority}
-        </span>
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: pc.dot,
+                display: 'inline-block',
+                flexShrink: 0,
+              }}
+            />
+            {feature.priority}
+          </span>
+          
+          {hasBlocker && (
+            <span 
+              className="material-symbols-rounded" 
+              style={{ fontSize: 16, color: '#e31837' }}
+              title="Active blocker"
+            >
+              warning
+            </span>
+          )}
+        </div>
 
         {/* Progress */}
         <div

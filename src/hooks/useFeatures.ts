@@ -71,6 +71,8 @@ function mapFeatureFromDb(row: any): Feature {
     srsRequirementId:        row?.srs_requirement_id ?? undefined,
     githubPrUrl:             row?.github_pr_url ?? undefined,
     internalNotes:           row?.internal_notes ?? undefined,
+    isFlagged:               row?.is_flagged === true,
+    flagReason:              row?.flag_reason ?? undefined,
   }
 }
 
@@ -79,18 +81,34 @@ function mapPatchToDb(patch: FeatureUpdateFields): any {
   const dbPatch: any = {}
   if ('featureName' in patch) dbPatch.feature_name = patch.featureName
   if ('moduleName' in patch) dbPatch.module_name = patch.moduleName
+  if ('description' in patch) dbPatch.description = patch.description
+  if ('phaseId' in patch) dbPatch.phase_id = patch.phaseId
+  if ('phaseName' in patch) dbPatch.phase_name = patch.phaseName
   if ('priority' in patch) dbPatch.priority = patch.priority
-  if ('plannedDeadline' in patch) dbPatch.planned_deadline = patch.plannedDeadline
-  if ('revisedDeadline' in patch) dbPatch.revised_deadline = patch.revisedDeadline
+  if ('assignedTo' in patch) dbPatch.assigned_to = patch.assignedTo
+  if ('owner' in patch) dbPatch.owner = patch.owner
+  if ('team' in patch) dbPatch.team = patch.team
+  if ('stage' in patch) dbPatch.stage = patch.stage
   if ('status' in patch) dbPatch.status = patch.status
   if ('progress' in patch) dbPatch.progress = patch.progress
-  if ('internalNotes' in patch) dbPatch.internal_notes = patch.internalNotes
-  if ('githubPrUrl' in patch) dbPatch.github_pr_url = patch.githubPrUrl
+  if ('startDate' in patch) dbPatch.start_date = patch.startDate
+  if ('plannedDeadline' in patch) dbPatch.planned_deadline = patch.plannedDeadline
+  if ('revisedDeadline' in patch) dbPatch.revised_deadline = patch.revisedDeadline
+  if ('estimatedCompletionDate' in patch) dbPatch.estimated_completion_date = patch.estimatedCompletionDate
+  if ('onTrackStatus' in patch) dbPatch.on_track_status = patch.onTrackStatus
+  if ('dependencies' in patch) dbPatch.dependencies = patch.dependencies
+  if ('blockerNote' in patch) dbPatch.blocker_note = patch.blockerNote
+  if ('qaStatus' in patch) dbPatch.qa_status = patch.qaStatus
+  if ('designStatus' in patch) dbPatch.design_status = patch.designStatus
+  if ('developmentStatus' in patch) dbPatch.development_status = patch.developmentStatus
+  if ('clientVisibility' in patch) dbPatch.client_visibility = patch.clientVisibility
+  if ('executiveSummary' in patch) dbPatch.executive_summary = patch.executiveSummary
   if ('mvpUrl' in patch) dbPatch.mvp_url = patch.mvpUrl
   if ('srsRequirementId' in patch) dbPatch.srs_requirement_id = patch.srsRequirementId
-  if ('executiveSummary' in patch) dbPatch.executive_summary = patch.executiveSummary
-  if ('clientVisibility' in patch) dbPatch.client_visibility = patch.clientVisibility
-  if ('assignedTo' in patch) dbPatch.assigned_to = patch.assignedTo
+  if ('githubPrUrl' in patch) dbPatch.github_pr_url = patch.githubPrUrl
+  if ('internalNotes' in patch) dbPatch.internal_notes = patch.internalNotes
+  if ('isFlagged' in patch) dbPatch.is_flagged = patch.isFlagged
+  if ('flagReason' in patch) dbPatch.flag_reason = patch.flagReason ?? null
   
   if ('subtasks' in patch && Array.isArray(patch.subtasks)) {
     dbPatch.subtasks = patch.subtasks
@@ -276,6 +294,8 @@ export function useFeatures(): UseFeaturesReturn {
         srs_requirement_id: f.srsRequirementId,
         github_pr_url: f.githubPrUrl,
         internal_notes: f.internalNotes,
+        is_flagged: f.isFlagged,
+        flag_reason: f.flagReason ?? null,
       }))
 
       const { error: upsertError } = await (supabase
@@ -297,19 +317,21 @@ export function useFeatures(): UseFeaturesReturn {
     try {
       const featureId = crypto.randomUUID()
       const now = new Date().toISOString()
+      const mappedPatch = mapPatchToDb(newFeature)
       const dbRow = {
         feature_id: featureId,
-        feature_name: newFeature.featureName || 'New Task',
-        module_name: newFeature.moduleName || '',
-        priority: newFeature.priority || 'Medium',
-        planned_deadline: newFeature.plannedDeadline || now,
         status: 'Not Started',
         stage: 'Design',
         progress: 0,
         subtasks: [],
         start_date: now,
-        last_updated_at: now
+        last_updated_at: now,
+        ...mappedPatch
       }
+      // Ensure fallbacks for required fields
+      dbRow.feature_name = dbRow.feature_name || 'New Task'
+      dbRow.priority = dbRow.priority || 'Medium'
+      dbRow.planned_deadline = dbRow.planned_deadline || now
 
       const { error: insertError } = await (supabase.from('features') as any).insert(dbRow)
       if (insertError) throw insertError

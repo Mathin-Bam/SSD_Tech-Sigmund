@@ -98,6 +98,7 @@ export function parseUploadCsv(content: string): { records: Feature[]; errors: s
       srsRequirementId: cell(row, 'srsRequirementId'),
       githubPrUrl: cell(row, 'githubPrUrl'),
       internalNotes: cell(row, 'internalNotes'),
+      isFlagged: false,
       subtasks: [],
     })
   })

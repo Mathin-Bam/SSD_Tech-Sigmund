@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { daysUntilDeadline, deadlineAlerts } from '../../domain/rules'
 import { getInitials, formatDate } from '../../shared/utils/formatters'
-import type { Feature, Phase } from '../../domain/types'
+import type { Feature, Phase, Blocker } from '../../domain/types'
 import { Badge } from '../../shared/ui/components'
 import { FeatureModal } from '../features/FeatureModal'
 import { FeatureStatusSheet } from '../features/FeatureStatusSheet'
+import { useBlockers } from '../../hooks/useBlockers'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -147,19 +148,25 @@ function MilestoneProgressRail({ feature }: { feature: Feature }) {
 }
 
 /** Single milestone card */
-function MilestoneCard({ feature, expanded, onToggle }: {
+function MilestoneCard({ feature, expanded, onToggle, blockers = [] }: {
   feature: Feature
   expanded: boolean
   onToggle: () => void
+  blockers?: Blocker[]
 }) {
   const dl = daysUntilDeadline(feature)
   const alerts = deadlineAlerts(feature)
   const statusColor = STATUS_COLOR[feature.onTrackStatus] ?? '#64748b'
 
+  const activeBlockers = blockers.filter((b) => b.featureId === feature.featureId && b.status !== 'Resolved')
+  const hasBlocker = activeBlockers.length > 0 || !!feature.blockerNote
+
+  const borderColor = hasBlocker ? '#e31837' : statusColor
+
   return (
     <div
       className="tl-milestone-card"
-      style={{ borderLeftColor: statusColor }}
+      style={{ borderLeftColor: borderColor, border: hasBlocker ? '1px solid #e31837' : undefined, boxShadow: hasBlocker ? '0 0 0 1px rgba(227,24,55,0.2)' : undefined }}
       onClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -176,7 +183,12 @@ function MilestoneCard({ feature, expanded, onToggle }: {
         <div className="tl-mc-left">
           <div className="tl-mc-dot" style={{ background: statusColor }} />
           <div>
-            <p className="tl-mc-name">{feature.featureName}</p>
+            <p className="tl-mc-name">
+              {feature.featureName}
+              {hasBlocker && (
+                <span className="material-symbols-rounded" style={{ fontSize: 14, color: '#e31837', marginLeft: 6, verticalAlign: 'middle' }} title="Active blocker">warning</span>
+              )}
+            </p>
             <p className="tl-mc-meta">
               <span
                 className="tl-stage-chip"
@@ -385,6 +397,7 @@ export function TimelinePage({
   onUpdateFeature?: (id: string, patch: Partial<Feature>) => Promise<void>
   onDeleteFeature?: (id: string) => Promise<void>
 }) {
+  const { blockers } = useBlockers()
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All')
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -583,6 +596,7 @@ export function TimelinePage({
                         feature={f}
                         expanded={false}
                         onToggle={() => handleFeatureClick(f)}
+                        blockers={blockers}
                       />
                     ))}
                   </div>
@@ -601,6 +615,10 @@ export function TimelinePage({
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         feature={selectedFeature}
+        blockers={blockers}
+        onFlag={onUpdateFeature ? async (featureId, reason, flag) => {
+          await onUpdateFeature(featureId, { isFlagged: flag, flagReason: flag ? reason : undefined })
+        } : undefined}
       />
 
       {role === 'admin' && onUpdateFeature && onDeleteFeature && (

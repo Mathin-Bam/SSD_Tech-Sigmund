@@ -64,7 +64,7 @@ function Dashboard() {
           />
           <Route path="/timeline" element={<TimelinePage features={features} phases={phases} role={role} onUpdateFeature={updateFeature} onDeleteFeature={deleteFeature} />} />
           <Route path="/team" element={<TeamPage features={features} teamMembers={teamMembers} />} />
-          <Route path="/risks" element={<RisksPage features={features} />} />
+          <Route path="/risks" element={<RisksPage features={features} role={role} />} />
           <Route
             path="/onboarding"
             element={

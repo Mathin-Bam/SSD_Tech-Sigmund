@@ -3,9 +3,12 @@ import { deadlineAlerts } from '../../domain/rules'
 import type { Feature, TeamMember } from '../../domain/types'
 import { Badge, ExternalLinkButton, Section } from '../../shared/ui/components'
 import { useUpdateLogs } from '../../hooks/useUpdateLogs'
+import { useBlockers } from '../../hooks/useBlockers'
 import { FeatureEditForm, type FeatureUpdateFields } from './FeatureEditForm'
 import { FeatureModal } from './FeatureModal'
 import { KanbanBoard } from './KanbanBoard'
+import { FlagResolutionModal } from './FlagResolutionModal'
+import { supabase } from '../../lib/supabase'
 
 type ViewMode = 'table' | 'kanban'
 
@@ -31,9 +34,19 @@ export function FeaturesPage({
   const [riskFilter, setRiskFilter] = useState('All')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isFlagResolutionOpen, setIsFlagResolutionOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
+  const [flagFilter, setFlagFilter] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('resolve') === 'true') {
+      setFlagFilter(true)
+    }
+  }, [])
   
   const { logs } = useUpdateLogs(selectedId)
+  const { blockers } = useBlockers()
 
   const phases = useMemo(() => Array.from(new Set(features.map((f) => f.phaseName))), [features])
 
@@ -41,6 +54,7 @@ export function FeaturesPage({
     return features.filter((f) => {
       const nameMatch = search ? (f.featureName || '').toLowerCase().includes(search.toLowerCase()) : true
       if (!nameMatch) return false
+      if (flagFilter && !f.isFlagged) return false
       if (phaseFilter !== 'All' && f.phaseName !== phaseFilter) return false
       if (stageFilter !== 'All' && f.stage !== stageFilter) return false
       if (riskFilter !== 'All' && f.onTrackStatus !== riskFilter) return false
@@ -58,9 +72,32 @@ export function FeaturesPage({
   function handleRowClick(f: Feature) {
     setSelectedId(f.featureId)
     if (role === 'admin') {
-      setModalMode('edit')
-      setIsModalOpen(true)
+      if (f.isFlagged) {
+        setIsFlagResolutionOpen(true)
+      } else {
+        setModalMode('edit')
+        setIsModalOpen(true)
+      }
     }
+  }
+
+  const handleResolveFlag = async (featureId: string, resolutionNote: string) => {
+    const feature = features.find(f => f.featureId === featureId)
+    if (!feature) return
+
+    // Insert log
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await (supabase.from('flag_logs') as any).insert({
+        feature_id: featureId,
+        flag_reason: feature.flagReason || 'Unspecified',
+        resolution_note: resolutionNote,
+        resolved_by: user.id
+      })
+    }
+
+    // Update feature to remove flag
+    await handleUpdateFeature(featureId, { isFlagged: false, flagReason: undefined })
   }
 
   const handleUpdateFeature = async (featureId: string, patch: Partial<Feature>): Promise<void> => {
@@ -159,6 +196,28 @@ export function FeaturesPage({
               Table
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => setFlagFilter(!flagFilter)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.85rem',
+              borderRadius: 8,
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: `1px solid ${flagFilter ? '#ef4444' : 'var(--border)'}`,
+              background: flagFilter ? 'rgba(239,68,68,0.15)' : 'var(--bg-surface)',
+              color: flagFilter ? '#ef4444' : 'var(--text-muted)',
+              transition: 'all 0.15s',
+              marginLeft: '0.5rem'
+            }}
+          >
+            <span style={{ fontSize: '1.1rem' }}>🚩</span>
+            Flagged
+          </button>
           {/* Count badge */}
           <span className="page-header-badge">
             <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
@@ -215,7 +274,7 @@ export function FeaturesPage({
               Features with statuses outside the 5 board columns are only visible in Table view.
             </p>
           )}
-          <KanbanBoard features={rows} onUpdateFeature={handleUpdateFeature} onCardClick={handleRowClick} />
+          <KanbanBoard features={rows} onUpdateFeature={handleUpdateFeature} onCardClick={handleRowClick} blockers={blockers} />
         </section>
       )}
 
@@ -448,6 +507,13 @@ export function FeaturesPage({
           }
         }}
         onDelete={onDeleteFeature}
+      />
+
+      <FlagResolutionModal
+        isOpen={isFlagResolutionOpen}
+        onClose={() => setIsFlagResolutionOpen(false)}
+        feature={selected}
+        onResolve={handleResolveFlag}
       />
     </div>
   )

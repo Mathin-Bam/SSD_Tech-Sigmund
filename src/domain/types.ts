@@ -73,6 +73,10 @@ export interface Feature {
   githubPrUrl?: string
   /** Internal developer notes (Admin only in UI). */
   internalNotes?: string
+  /** True when a client has flagged this feature for team review. */
+  isFlagged: boolean
+  /** The reason supplied by the client when flagging. */
+  flagReason?: string
 }
 
 export interface TeamMember {
@@ -86,4 +90,37 @@ export interface TeamMember {
 export interface DeadlineAlert {
   type: 'due_soon' | 'overdue' | 'stale' | 'blocked'
   label: string
+}
+
+export type BlockerSeverity = 'Critical' | 'High' | 'Medium' | 'Low'
+export type BlockerStatus = 'Open' | 'Escalated' | 'Resolved'
+
+export interface Blocker {
+  id: string
+  featureId?: string
+  title: string
+  description: string
+  category: string
+  severity: BlockerSeverity
+  status: BlockerStatus
+  createdBy: string
+  createdAt: string
+}
+
+export interface BlockerLog {
+  id: string
+  blockerId: string
+  userId: string
+  action: string
+  notes?: string
+  createdAt: string
+}
+
+export interface FlagLog {
+  id: string
+  featureId: string
+  flagReason: string
+  resolutionNote: string
+  resolvedBy: string
+  resolvedAt: string
 }

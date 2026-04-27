@@ -141,6 +141,35 @@ export function FeatureModal({ isOpen, onClose, feature, onSave, onDelete }: Fea
         }}
       >
         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border, rgba(255,255,255,0.1))' }}>
+          {/* Client Flag Alert */}
+          {feature?.isFlagged && (
+            <div style={{ marginBottom: '1rem', padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <div>
+                  <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>⚠️ Client Flag</p>
+                  {feature.flagReason && <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #cbd5e1)' }}>{feature.flagReason}</p>}
+                </div>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={async () => {
+                    setIsSubmitting(true)
+                    try {
+                      await onSave({ isFlagged: false, flagReason: undefined })
+                      onClose()
+                    } catch (err) {
+                      console.error('Resolve flag failed:', err)
+                    } finally {
+                      setIsSubmitting(false)
+                    }
+                  }}
+                  style={{ flexShrink: 0, padding: '0.3rem 0.75rem', borderRadius: 6, background: 'transparent', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444', fontSize: '0.78rem', fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}
+                >
+                  Resolve Flag
+                </button>
+              </div>
+            </div>
+          )}
           <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text, #f8fafc)' }}>
             {isEditMode ? 'Edit Task' : 'Create New Task'}
           </h2>

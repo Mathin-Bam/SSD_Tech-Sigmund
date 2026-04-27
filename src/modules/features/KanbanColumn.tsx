@@ -1,7 +1,7 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { CSSProperties } from 'react'
-import type { Feature, FeatureStatus } from '../../domain/types'
+import type { Feature, FeatureStatus, Blocker } from '../../domain/types'
 import { KanbanCard } from './KanbanCard'
 
 // ── Column colour palette ──────────────────────────────────
@@ -54,10 +54,12 @@ export function KanbanColumn({
   id,
   features,
   onCardClick,
+  blockers,
 }: {
   id: KanbanColumnId
   features: Feature[]
   onCardClick?: (f: Feature) => void
+  blockers?: Blocker[]
 }) {
   const { setNodeRef, isOver: isDirectlyOver } = useDroppable({ id })
   const { over } = useDndContext()
@@ -181,7 +183,7 @@ export function KanbanColumn({
               </p>
             </div>
           ) : (
-            features.map((f) => <KanbanCard key={f.featureId} feature={f} onClick={onCardClick} />)
+            features.map((f) => <KanbanCard key={f.featureId} feature={f} onClick={onCardClick} blockers={blockers} />)
           )}
         </SortableContext>
       </div>

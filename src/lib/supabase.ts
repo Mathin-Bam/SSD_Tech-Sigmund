@@ -142,6 +142,32 @@ export type Database = {
           created_at?: string
         }
       }
+      flag_logs: {
+        Row: {
+          id: string
+          feature_id: string
+          flag_reason: string
+          resolution_note: string
+          resolved_by: string | null
+          resolved_at: string
+        }
+        Insert: {
+          id?: string
+          feature_id: string
+          flag_reason: string
+          resolution_note: string
+          resolved_by?: string | null
+          resolved_at?: string
+        }
+        Update: {
+          id?: string
+          feature_id?: string
+          flag_reason?: string
+          resolution_note?: string
+          resolved_by?: string | null
+          resolved_at?: string
+        }
+      }
       update_logs: {
         Row: {
           id: string

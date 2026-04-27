@@ -13,7 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { type CSSProperties, useState } from 'react'
-import type { Feature } from '../../domain/types'
+import type { Feature, Blocker } from '../../domain/types'
 import type { FeatureUpdateFields } from './FeatureEditForm'
 import { KanbanCardOverlay } from './KanbanCard'
 import { KANBAN_COLUMNS, KanbanColumn, type KanbanColumnId } from './KanbanColumn'
@@ -22,9 +22,10 @@ interface KanbanBoardProps {
   features: Feature[]
   onUpdateFeature: (featureId: string, patch: FeatureUpdateFields) => Promise<void>
   onCardClick?: (feature: Feature) => void
+  blockers?: Blocker[]
 }
 
-export function KanbanBoard({ features, onUpdateFeature, onCardClick }: KanbanBoardProps) {
+export function KanbanBoard({ features, onUpdateFeature, onCardClick, blockers }: KanbanBoardProps) {
   // Track which card is being dragged (for the overlay)
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
 
@@ -160,14 +161,14 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick }: KanbanBo
     >
       <div style={boardStyle} role="region" aria-label="Kanban board">
         {KANBAN_COLUMNS.map((colId) => (
-          <KanbanColumn key={colId} id={colId} features={columnFeatures[colId]} onCardClick={onCardClick} />
+          <KanbanColumn key={colId} id={colId} features={columnFeatures[colId]} onCardClick={onCardClick} blockers={blockers} />
         ))}
       </div>
 
       {/* Floating drag overlay — renders a ghost of the card at cursor */}
       <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }} modifiers={[snapCenterToCursor]}>
         {activeFeature ? (
-          <KanbanCardOverlay feature={activeFeature} />
+          <KanbanCardOverlay feature={activeFeature} blockers={blockers} />
         ) : null}
       </DragOverlay>
     </DndContext>
