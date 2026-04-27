@@ -14,9 +14,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<'admin' | 'executive' | 'dev' | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Guard against React StrictMode double-mount and stale closures
-  const initDone = useRef(false)
-
   async function fetchProfile(userId: string): Promise<'admin' | 'executive' | 'dev' | null> {
     try {
       const { data, error } = await supabase
@@ -37,96 +34,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // ── Failsafe timeout ──────────────────────────────────────────────
-    // If ANYTHING goes wrong (network, Supabase outage, stale token that
-    // can't be refreshed, etc.), we clear loading so the user sees the
-    // login page rather than an infinite spinner.
-    const failsafeTimer = setTimeout(() => {
-      setLoading((prev) => {
-        if (prev) {
-          console.warn('[AuthProvider] Failsafe timeout fired — forcing loading=false')
-          return false
-        }
-        return prev
-      })
-    }, AUTH_INIT_TIMEOUT_MS)
+    let isMounted = true
 
-    // ── onAuthStateChange ─────────────────────────────────────────────
-    // This is the SINGLE source of truth. Key behaviors:
-    //   • INITIAL_SESSION fires synchronously during the subscribe() call
-    //     with the recovered session (it auto-refreshes expired JWTs).
-    //   • SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED fire later.
-    //   • SIGNED_OUT fires on logout.
-    //
-    // We handle INITIAL_SESSION as our "app init" path. All subsequent
-    // events are handled as live updates. This eliminates the old
-    // getSession() race condition entirely.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return
+
         const currentUser = session?.user ?? null
 
         if (event === 'INITIAL_SESSION') {
-          // Prevent StrictMode double-init
-          if (initDone.current) return
-          initDone.current = true
-
-          setUser(currentUser)
-
           if (currentUser) {
-            const fetchedRole = await fetchProfile(currentUser.id)
+            let fetchedRole = await fetchProfile(currentUser.id)
 
-            if (fetchedRole) {
-              setRole(fetchedRole)
-            } else {
-              // Profile fetch failed — could be RLS rejection with stale
-              // token. Try getUser() to force a server-side refresh, then
-              // retry the profile fetch one more time.
+            if (!fetchedRole) {
               console.warn('[AuthProvider] Profile fetch returned null, attempting token refresh via getUser()...')
               const { data: { user: refreshedUser } } = await supabase.auth.getUser()
+              
               if (refreshedUser) {
-                setUser(refreshedUser)
-                const retryRole = await fetchProfile(refreshedUser.id)
-                setRole(retryRole)
+                fetchedRole = await fetchProfile(refreshedUser.id)
+                if (isMounted) {
+                  setUser(refreshedUser)
+                  setRole(fetchedRole)
+                }
               } else {
-                // Truly no valid session — treat as signed out
                 console.warn('[AuthProvider] getUser() returned null — session is invalid')
-                setUser(null)
-                setRole(null)
+                if (isMounted) {
+                  setUser(null)
+                  setRole(null)
+                }
+              }
+            } else {
+              if (isMounted) {
+                setUser(currentUser)
+                setRole(fetchedRole)
               }
             }
           } else {
-            setRole(null)
+            if (isMounted) {
+              setUser(null)
+              setRole(null)
+            }
           }
 
-          setLoading(false)
-          clearTimeout(failsafeTimer)
+          if (isMounted) {
+            setLoading(false)
+          }
           return
         }
 
-        // ── Live auth events (post-init) ────────────────────────────
+        // Live auth events (post-init)
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (currentUser) {
-            setUser(currentUser)
+            if (isMounted) setUser(currentUser)
             const newRole = await fetchProfile(currentUser.id)
-            setRole(newRole)
+            if (isMounted) setRole(newRole)
           }
         } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setRole(null)
+          if (isMounted) {
+            setUser(null)
+            setRole(null)
+          }
         }
       }
     )
 
     return () => {
-      clearTimeout(failsafeTimer)
+      isMounted = false
       subscription.unsubscribe()
     }
   }, [])
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      throw error
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.warn('[AuthProvider] Server sign out error (token might be expired):', error.message)
+      }
+    } catch (err) {
+      console.warn('[AuthProvider] Unexpected sign out error:', err)
+    } finally {
+      // Always clear local state to prevent being stuck with an invalid session
+      setUser(null)
+      setRole(null)
     }
   }
 
