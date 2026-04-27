@@ -1,4 +1,4 @@
-import { useDroppable } from '@dnd-kit/core'
+import { useDroppable, useDndContext } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { CSSProperties } from 'react'
 import type { Feature, FeatureStatus } from '../../domain/types'
@@ -59,9 +59,13 @@ export function KanbanColumn({
   features: Feature[]
   onCardClick?: (f: Feature) => void
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id })
+  const { setNodeRef, isOver: isDirectlyOver } = useDroppable({ id })
+  const { over } = useDndContext()
   const meta = COLUMN_META[id]
   const itemIds = features.map((f) => f.featureId)
+
+  const isOverCardInColumn = over ? itemIds.includes(over.id as string) : false
+  const isOver = isDirectlyOver || isOverCardInColumn
 
   const columnStyle: CSSProperties = {
     display: 'flex',

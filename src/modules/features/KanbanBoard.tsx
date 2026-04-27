@@ -3,7 +3,7 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
+  rectIntersection,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -154,7 +154,7 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick }: KanbanBo
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
