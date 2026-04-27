@@ -167,7 +167,7 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick }: KanbanBo
       {/* Floating drag overlay — renders a ghost of the card at cursor */}
       <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }} modifiers={[snapCenterToCursor]}>
         {activeFeature ? (
-          <div style={{ width: 220, transform: 'rotate(2deg)', opacity: 0.95 }}>
+          <div style={{ width: '100%', transform: 'rotate(2deg)', opacity: 0.95, transformOrigin: 'center center' }}>
             <KanbanCardOverlay feature={activeFeature} />
           </div>
         ) : null}
