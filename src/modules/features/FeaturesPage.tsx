@@ -512,7 +512,7 @@ export function FeaturesPage({
       <FlagResolutionModal
         isOpen={isFlagResolutionOpen}
         onClose={() => setIsFlagResolutionOpen(false)}
-        feature={selected}
+        feature={selected ?? null}
         onResolve={handleResolveFlag}
       />
     </div>
