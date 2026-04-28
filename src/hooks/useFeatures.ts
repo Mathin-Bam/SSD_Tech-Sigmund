@@ -73,6 +73,7 @@ function mapFeatureFromDb(row: any): Feature {
     internalNotes:           row?.internal_notes ?? undefined,
     isFlagged:               row?.is_flagged === true,
     flagReason:              row?.flag_reason ?? undefined,
+    sortOrder:               typeof row?.sort_order === 'number' ? row.sort_order : 0,
   }
 }
 
@@ -109,6 +110,7 @@ function mapPatchToDb(patch: FeatureUpdateFields): any {
   if ('internalNotes' in patch) dbPatch.internal_notes = patch.internalNotes
   if ('isFlagged' in patch) dbPatch.is_flagged = patch.isFlagged
   if ('flagReason' in patch) dbPatch.flag_reason = patch.flagReason ?? null
+  if ('sortOrder' in patch) dbPatch.sort_order = patch.sortOrder
   
   if ('subtasks' in patch && Array.isArray(patch.subtasks)) {
     dbPatch.subtasks = patch.subtasks
@@ -143,7 +145,7 @@ export function useFeatures(): UseFeaturesReturn {
       const { data, error: fetchError } = await supabase
         .from('features')
         .select('*')
-        .order('feature_id')
+        .order('sort_order', { ascending: true })
 
       if (fetchError) {
         console.error('[useFeatures] Supabase query error:', fetchError)
@@ -296,6 +298,7 @@ export function useFeatures(): UseFeaturesReturn {
         internal_notes: f.internalNotes,
         is_flagged: f.isFlagged,
         flag_reason: f.flagReason ?? null,
+        sort_order: f.sortOrder ?? 0,
       }))
 
       const { error: upsertError } = await (supabase

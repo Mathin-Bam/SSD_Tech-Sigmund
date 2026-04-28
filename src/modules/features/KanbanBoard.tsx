@@ -1,9 +1,9 @@
 import {
+  pointerWithin,
   DndContext,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  rectIntersection,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -59,6 +59,11 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick, blockers }
     // on the Kanban board — they remain accessible in the table view.
   }
 
+  // Sort features in each column by sortOrder
+  for (const col of KANBAN_COLUMNS) {
+    columnFeatures[col].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+  }
+
   // The card currently being dragged
   const activeFeature = activeId
     ? features.find((f) => f.featureId === activeId)
@@ -78,16 +83,18 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick, blockers }
     const featureId = active.id as string
     const overId = over.id as string
 
-    // Determine the target column:
-    // `over.id` could be a column id OR another card id (from SortableContext).
-    // We resolve: if overId is a valid column key, use it directly;
-    // otherwise find which column the hovered card belongs to.
+    // Find the current column and feature
+    const currentFeature = features.find((f) => f.featureId === featureId)
+    if (!currentFeature) return
+
+    const isKanbanStatus = KANBAN_COLUMNS.includes(currentFeature.status as KanbanColumnId)
+    const currentColumn = isKanbanStatus ? (currentFeature.status as KanbanColumnId) : undefined
+
     let targetColumn: KanbanColumnId | undefined
 
     if (KANBAN_COLUMNS.includes(overId as KanbanColumnId)) {
       targetColumn = overId as KanbanColumnId
     } else {
-      // overId is a featureId — find its column
       for (const col of KANBAN_COLUMNS) {
         if (columnFeatures[col].some((f) => f.featureId === overId)) {
           targetColumn = col
@@ -98,16 +105,36 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick, blockers }
 
     if (!targetColumn) return
 
-    // Only update if the column actually changed
-    const currentFeature = features.find((f) => f.featureId === featureId)
-    if (!currentFeature) return
-
-    const isKanbanStatus = KANBAN_COLUMNS.includes(currentFeature.status as KanbanColumnId)
-    const currentColumn = isKanbanStatus ? (currentFeature.status as KanbanColumnId) : undefined
-
     if (currentColumn !== targetColumn) {
-      // Fire the optimistic mutation — useFeatures handles the revert on error
-      void onUpdateFeature(featureId, { status: targetColumn })
+      // Moved to a different column — put it at the bottom
+      const targetList = columnFeatures[targetColumn]
+      const lastItem = targetList[targetList.length - 1]
+      const newSortOrder = lastItem ? (lastItem.sortOrder || 0) + 1000 : 0
+      void onUpdateFeature(featureId, { status: targetColumn, sortOrder: newSortOrder })
+    } else if (currentColumn && featureId !== overId) {
+      // Reordered within the same column
+      const list = columnFeatures[currentColumn]
+      const oldIndex = list.findIndex(f => f.featureId === featureId)
+      const newIndex = list.findIndex(f => f.featureId === overId)
+
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const isMovingDown = oldIndex < newIndex
+        const prevItem = isMovingDown ? list[newIndex] : list[newIndex - 1]
+        const nextItem = isMovingDown ? list[newIndex + 1] : list[newIndex]
+
+        let newSortOrder: number
+        if (prevItem && nextItem) {
+          newSortOrder = ((prevItem.sortOrder || 0) + (nextItem.sortOrder || 0)) / 2
+        } else if (prevItem) {
+          newSortOrder = (prevItem.sortOrder || 0) + 1000
+        } else if (nextItem) {
+          newSortOrder = (nextItem.sortOrder || 0) - 1000
+        } else {
+          newSortOrder = 0
+        }
+
+        void onUpdateFeature(featureId, { sortOrder: newSortOrder })
+      }
     }
   }
 
@@ -155,7 +182,7 @@ export function KanbanBoard({ features, onUpdateFeature, onCardClick, blockers }
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={rectIntersection}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

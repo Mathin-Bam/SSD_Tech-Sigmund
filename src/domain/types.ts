@@ -77,6 +77,8 @@ export interface Feature {
   isFlagged: boolean
   /** The reason supplied by the client when flagging. */
   flagReason?: string
+  /** Used for Kanban column sorting */
+  sortOrder?: number
 }
 
 export interface TeamMember {

@@ -105,7 +105,7 @@ export function KanbanColumn({
   }
 
   return (
-    <div style={columnStyle} aria-label={`${id} column, ${features.length} cards`}>
+    <div ref={setNodeRef} style={columnStyle} aria-label={`${id} column, ${features.length} cards`}>
       {/* Column Header */}
       <header style={headerStyle}>
         <span
@@ -148,7 +148,7 @@ export function KanbanColumn({
       </header>
 
       {/* Drop zone */}
-      <div ref={setNodeRef} style={bodyStyle}>
+      <div style={bodyStyle}>
         <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           {features.length === 0 ? (
             <div
