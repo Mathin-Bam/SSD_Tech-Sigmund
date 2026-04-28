@@ -13,6 +13,7 @@ export type FeatureUpdateFields = Partial<Pick<
   | 'executiveSummary'
   | 'clientVisibility'
   | 'assignedTo'
+  | 'sortOrder'
 >>
 
 export function FeatureEditForm({
