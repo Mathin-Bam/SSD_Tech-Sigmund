@@ -106,18 +106,18 @@ const styles = `
     animation: pulse-ring 2.4s ease-out infinite;
   }
   .welcome-logo {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     border-radius: 16px;
     background: #e31837;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Inter', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
+    font-size: 17px;
+    font-weight: 300;
     color: #fff;
-    letter-spacing: -0.5px;
+    letter-spacing: 0px;
     box-shadow: 0 0 32px rgba(227,24,55,0.4), 0 4px 20px rgba(0,0,0,0.6);
     animation: float 4s ease-in-out infinite;
   }
@@ -430,7 +430,7 @@ export function WelcomePage({ onProjectSelect }: WelcomePageProps) {
           <div className="welcome-brand">
             <div className="welcome-logo-wrap">
               <div className="welcome-logo-ring" />
-              <div className="welcome-logo">ssd</div>
+              <div className="welcome-logo">ssd-tech</div>
             </div>
             <div className="welcome-title">
               <h1>

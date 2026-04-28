@@ -116,18 +116,18 @@ const styles = `
     animation: pulse-ring 2.5s ease-out infinite;
   }
   .login-logo {
-    width: 56px;
-    height: 56px;
+    width: 66px;
+    height: 66px;
     border-radius: 14px;
     background: #e31837;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Inter', sans-serif;
-    font-size: 19px;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 300;
     color: #fff;
-    letter-spacing: -0.5px;
+    letter-spacing: 0px;
     box-shadow: 0 0 24px rgba(227,24,55,0.45), 0 4px 16px rgba(0,0,0,0.5);
     animation: float 4.5s ease-in-out infinite;
   }
@@ -382,7 +382,7 @@ export function LoginPage({ projectId, onBack }: LoginPageProps) {
           <div className="login-brand">
             <div className="login-logo-wrap">
               <div className="login-logo-ring" />
-              <div className="login-logo">ssd</div>
+              <div className="login-logo">ssd-tech</div>
             </div>
             <div className="login-brand-text">
               <span className="login-brand-name">ssd-tech</span>
