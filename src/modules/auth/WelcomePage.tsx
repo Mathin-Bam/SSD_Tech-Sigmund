@@ -271,6 +271,27 @@ const styles = `
     font-size: 14px;
   }
 
+  .project-credentials {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    border: 1px dashed rgba(255,255,255,0.1);
+    font-size: 11.5px;
+    color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .project-credentials span {
+    display: flex;
+    justify-content: space-between;
+  }
+  .project-credentials strong {
+    color: #e2e8f0;
+    font-family: 'monospace';
+  }
+
   .project-card-arrow {
     position: absolute;
     bottom: 20px;
@@ -363,6 +384,8 @@ interface Project {
   status: 'active' | 'soon' | 'planned'
   icon: string
   iconColor: 'red' | 'blue' | 'purple'
+  adminEmail?: string
+  adminPassword?: string
 }
 
 /** Project pickers only set the login label — all metrics and lists come from your database after sign-in (empty until admin uploads or inserts data). */
@@ -375,6 +398,8 @@ const PROJECTS: Project[] = [
     status: 'active',
     icon: 'analytics',
     iconColor: 'red',
+    adminEmail: 'admin@ssd-tech.com',
+    adminPassword: 'Admin@SSD2026',
   },
   {
     id: 'acp-hospital',
@@ -384,6 +409,8 @@ const PROJECTS: Project[] = [
     status: 'active',
     icon: 'local_hospital',
     iconColor: 'blue',
+    adminEmail: 'admin@ssd-tech.com',
+    adminPassword: 'Admin@SSD2026',
   },
 ]
 
@@ -473,6 +500,13 @@ export function WelcomePage({ onProjectSelect }: WelcomePageProps) {
 
                 <h3 className="project-name">{project.name}</h3>
                 <p className="project-desc">{project.description}</p>
+
+                {project.adminEmail && project.adminPassword && (
+                  <div className="project-credentials">
+                    <span>Email: <strong>{project.adminEmail}</strong></span>
+                    <span>Pass: <strong>{project.adminPassword}</strong></span>
+                  </div>
+                )}
 
                 <div className="project-card-arrow">
                   <span className="material-symbols-rounded">arrow_forward</span>
