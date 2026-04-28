@@ -350,8 +350,8 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ projectId, onBack }: LoginPageProps) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState(projectId === 'ssd-tech-tracker' ? 'admin@ssd-tech.com' : '')
+  const [password, setPassword] = useState(projectId === 'ssd-tech-tracker' ? 'Admin@SSD2026' : '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errorKey, setErrorKey] = useState(0)
